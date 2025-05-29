@@ -16,7 +16,7 @@ const Formateur: React.FC = () => {
                 alt="Théo Mahy-Ma-Somga" 
                 className="w-full h-auto object-cover aspect-[4/5]"
               />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-navy/90 to-transparent pt-20 pb-4 px-6">
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-navy/90 to-transparent pt-20 pb-4 px-6 text-right">
                 <h3 className="text-xl font-heading font-bold text-white">Théo Mahy-Ma-Somga</h3>
                 <p className="text-accent">Réalisateur & Fondateur</p>
               </div>
