@@ -12,7 +12,7 @@ const Formateur: React.FC = () => {
           <div className="md:w-1/2">
             <div className="rounded-xl overflow-hidden border-2 border-primary/30 relative">
               <img 
-                src="https://images.pexels.com/photos/8107905/pexels-photo-8107905.jpeg" 
+                src="/Theo-Mahy-Ma-Somga.jpeg" 
                 alt="Théo Mahy-Ma-Somga" 
                 className="w-full h-auto object-cover aspect-[4/5]"
               />
