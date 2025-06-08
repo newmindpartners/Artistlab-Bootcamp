@@ -282,14 +282,24 @@ async function sendConfirmationEmail(formData: any) {
     </html>
   `;
 
+  // Check if we have RESEND_API_KEY
+  const resendApiKey = Deno.env.get('RESEND_API_KEY');
+  if (!resendApiKey) {
+    console.error('❌ RESEND_API_KEY not found in environment variables');
+    console.log('Available environment variables:', Object.keys(Deno.env.toObject()));
+    throw new Error('RESEND_API_KEY environment variable is not set');
+  }
+
   try {
-    console.log('Sending email using Supabase Edge SMTP...');
+    console.log('Sending email using Resend API...');
+    console.log('API Key exists:', !!resendApiKey);
+    console.log('API Key length:', resendApiKey.length);
     
-    // Use Supabase's built-in fetch to send email via SMTP
+    // Use Resend API to send email
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
+        'Authorization': `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -300,21 +310,25 @@ async function sendConfirmationEmail(formData: any) {
       }),
     });
 
+    console.log('Email API response status:', emailResponse.status);
+    console.log('Email API response headers:', Object.fromEntries(emailResponse.headers.entries()));
+
     if (!emailResponse.ok) {
       const errorData = await emailResponse.text();
-      console.error('Email service error:', errorData);
+      console.error('Email service error response:', errorData);
       throw new Error(`Email service error: ${emailResponse.status} - ${errorData}`);
     }
 
     const result = await emailResponse.json();
     console.log('✅ EMAIL SENT SUCCESSFULLY!');
-    console.log('Email ID:', result.id);
+    console.log('Email result:', result);
     
     return { success: true, emailId: result.id };
   } catch (error) {
     console.error('❌ EMAIL SENDING FAILED:');
     console.error('Error details:', error);
     console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     throw new Error(`Failed to send confirmation email: ${error.message}`);
   }
 }
