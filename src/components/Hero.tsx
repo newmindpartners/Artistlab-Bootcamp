@@ -1,6 +1,7 @@
 import React from 'react';
 import { Film, Star, Users, Calendar } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { products } from '../stripe-config';
 
 const Hero: React.FC = () => {
   const { t } = useLanguage();
@@ -69,7 +70,7 @@ const Hero: React.FC = () => {
               href="#inscription" 
               className="button-primary shadow-lg hover:shadow-accent/20 transition-shadow"
             >
-              {t('hero.cta.register')}
+              {t('hero.cta.register')} • {products.formation.price}
             </a>
             <a 
               href="#programme" 

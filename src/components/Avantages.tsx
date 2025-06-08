@@ -1,6 +1,7 @@
 import React from 'react';
 import { Clapperboard, Lightbulb, Users, Award } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { products } from '../stripe-config';
 
 interface AvantageProps {
   title: string;
@@ -75,7 +76,7 @@ const Avantages: React.FC = () => {
             href="#inscription" 
             className="button-primary"
           >
-            {t('benefits.cta')}
+            {t('benefits.cta')} • {products.formation.price}
           </a>
         </div>
       </div>
