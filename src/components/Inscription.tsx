@@ -104,12 +104,24 @@ const Inscription: React.FC = () => {
     setLoading(true);
     
     try {
+      console.log('Starting registration process...');
+      
       // 1. First, handle user authentication
+      console.log('Checking existing user...');
       const { data: { user: existingUser }, error: userError } = await supabase.auth.getUser();
+
+      if (userError) {
+        console.error('Error checking existing user:', userError);
+        if (userError.message.includes('Failed to fetch') || userError.message.includes('fetch')) {
+          throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
+        }
+        throw new Error(userError.message);
+      }
 
       let session;
 
       if (!existingUser) {
+        console.log('Creating new user...');
         // New user - sign them up first
         const password = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -122,6 +134,10 @@ const Inscription: React.FC = () => {
 
         if (signUpError) {
           console.error('Signup error:', signUpError);
+          
+          if (signUpError.message.includes('Failed to fetch') || signUpError.message.includes('fetch')) {
+            throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
+          }
           
           // Check for specific "user already exists" error
           if (signUpError.message === 'User already registered' || 
@@ -136,11 +152,15 @@ const Inscription: React.FC = () => {
 
         session = signUpData.session;
       } else {
+        console.log('Getting existing user session...');
         // Existing user - get their session
         const { data: { session: existingSession }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
           console.error('Session error:', sessionError);
+          if (sessionError.message.includes('Failed to fetch') || sessionError.message.includes('fetch')) {
+            throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
+          }
           throw new Error(sessionError.message);
         }
         
@@ -151,6 +171,7 @@ const Inscription: React.FC = () => {
         throw new Error('No session available');
       }
 
+      console.log('Creating registration record...');
       // 2. Now create registration in Supabase (user is authenticated)
       const { error: registrationError } = await supabase
         .from('registrations')
@@ -163,6 +184,9 @@ const Inscription: React.FC = () => {
 
       if (registrationError) {
         console.error('Registration error:', registrationError);
+        if (registrationError.message.includes('Failed to fetch') || registrationError.message.includes('fetch')) {
+          throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
+        }
         throw new Error(registrationError.message);
       }
 
@@ -170,6 +194,7 @@ const Inscription: React.FC = () => {
       localStorage.setItem('sb-token', session.access_token);
       localStorage.setItem('registration-data', JSON.stringify(formData));
 
+      console.log('Creating Stripe checkout session...');
       // 4. Create Stripe checkout session
       const checkoutUrl = await createCheckoutSession(
         products.formation.priceId,
@@ -180,6 +205,7 @@ const Inscription: React.FC = () => {
         throw new Error('Failed to create checkout session');
       }
 
+      console.log('Redirecting to Stripe...');
       // 5. Redirect to Stripe
       window.location.href = checkoutUrl;
       
@@ -187,13 +213,17 @@ const Inscription: React.FC = () => {
     } catch (err: any) {
       console.error('Registration process error:', err);
       
-      // Check for specific "user already exists" error in the catch block as well
-      if (err.message === 'User already registered' || 
+      // Check for network-related errors
+      if (err.message.includes('Failed to fetch') || 
+          err.message.includes('fetch') ||
+          err.message.includes('Unable to connect')) {
+        setError('Unable to connect to the server. Please check your internet connection and try again.');
+      } else if (err.message === 'User already registered' || 
           err.message.includes('already registered') ||
           err.message.includes('user_already_exists')) {
         setError(t('form.error.userExists'));
       } else {
-        setError(t('form.error'));
+        setError(err.message || t('form.error'));
       }
       
       setSuccess(false);
