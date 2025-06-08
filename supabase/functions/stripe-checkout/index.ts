@@ -162,7 +162,55 @@ Deno.serve(async (req) => {
 
       console.log(`Successfully set up new customer ${customerId} with subscription record`);
     } else {
-      customerId = customer.customer_id;
+      // Validate that the customer ID from database still exists in Stripe
+      try {
+        await stripe.customers.retrieve(customer.customer_id);
+        console.log(`Validated existing Stripe customer ${customer.customer_id} for user ${user.id}`);
+        customerId = customer.customer_id;
+      } catch (stripeCustomerError: any) {
+        console.error(`Stripe customer ${customer.customer_id} no longer exists:`, stripeCustomerError.message);
+        
+        // Mark the existing database entry as deleted
+        const { error: markDeletedError } = await supabase
+          .from('stripe_customers')
+          .update({ deleted_at: new Date().toISOString() })
+          .eq('user_id', user.id)
+          .eq('customer_id', customer.customer_id);
+
+        if (markDeletedError) {
+          console.error('Failed to mark customer as deleted in database', markDeletedError);
+        }
+
+        // Create a new Stripe customer
+        const newCustomer = await stripe.customers.create({
+          email: user.email,
+          metadata: {
+            userId: user.id,
+          },
+        });
+
+        console.log(`Created new Stripe customer ${newCustomer.id} to replace invalid customer ${customer.customer_id} for user ${user.id}`);
+
+        const { error: createCustomerError } = await supabase.from('stripe_customers').insert({
+          user_id: user.id,
+          customer_id: newCustomer.id,
+        });
+
+        if (createCustomerError) {
+          console.error('Failed to save new customer information in the database', createCustomerError);
+
+          // Try to clean up the Stripe customer
+          try {
+            await stripe.customers.del(newCustomer.id);
+          } catch (deleteError) {
+            console.error('Failed to clean up after customer mapping error:', deleteError);
+          }
+
+          return corsResponse({ error: 'Failed to create customer mapping' }, 500);
+        }
+
+        customerId = newCustomer.id;
+      }
 
       if (mode === 'subscription') {
         // Verify subscription exists for existing customer
