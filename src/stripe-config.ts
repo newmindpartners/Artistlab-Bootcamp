@@ -1,9 +1,8 @@
 export const products = {
   formation: {
-    priceId: 'price_1234567890abcdef', // Replace this with your actual Stripe price ID
+    priceId: 'price_1RXiRfDNXKRL3JoSiHy5UPgg',
     name: 'Formation Cinema & AI',
-    description: 'Formation complète sur le cinéma et l\'intelligence artificielle',
+    description: '2 jours de formation intensive',
     mode: 'payment' as const,
-    price: '1€',
   },
 } as const;
