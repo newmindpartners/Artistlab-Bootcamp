@@ -9,6 +9,7 @@ const stripe = new Stripe(stripeSecret, {
     name: 'Bolt Integration',
     version: '1.0.0',
   },
+  apiVersion: '2023-10-16',
 });
 
 // Helper function to create responses with CORS headers
@@ -45,6 +46,8 @@ Deno.serve(async (req) => {
 
     const { price_id, success_url, cancel_url, mode } = await req.json();
 
+    console.log('Received checkout request with price_id:', price_id);
+
     const error = validateParameters(
       { price_id, success_url, cancel_url, mode },
       {
@@ -56,6 +59,7 @@ Deno.serve(async (req) => {
     );
 
     if (error) {
+      console.error('Parameter validation error:', error);
       return corsResponse({ error }, 400);
     }
 
@@ -67,11 +71,25 @@ Deno.serve(async (req) => {
     } = await supabase.auth.getUser(token);
 
     if (getUserError) {
+      console.error('User authentication error:', getUserError);
       return corsResponse({ error: 'Failed to authenticate user' }, 401);
     }
 
     if (!user) {
       return corsResponse({ error: 'User not found' }, 404);
+    }
+
+    console.log('Authenticated user:', user.id);
+
+    // Verify the price exists in Stripe before proceeding
+    try {
+      const price = await stripe.prices.retrieve(price_id);
+      console.log('Price retrieved successfully:', price.id, 'Amount:', price.unit_amount, 'Currency:', price.currency);
+    } catch (priceError: any) {
+      console.error('Price retrieval error:', priceError);
+      return corsResponse({ 
+        error: `Invalid price ID: ${price_id}. Error: ${priceError.message}` 
+      }, 400);
     }
 
     const { data: customer, error: getCustomerError } = await supabase
@@ -83,7 +101,6 @@ Deno.serve(async (req) => {
 
     if (getCustomerError) {
       console.error('Failed to fetch customer information from the database', getCustomerError);
-
       return corsResponse({ error: 'Failed to fetch customer information' }, 500);
     }
 
@@ -157,7 +174,6 @@ Deno.serve(async (req) => {
 
         if (getSubscriptionError) {
           console.error('Failed to fetch subscription information from the database', getSubscriptionError);
-
           return corsResponse({ error: 'Failed to fetch subscription information' }, 500);
         }
 
@@ -170,12 +186,19 @@ Deno.serve(async (req) => {
 
           if (createSubscriptionError) {
             console.error('Failed to create subscription record for existing customer', createSubscriptionError);
-
             return corsResponse({ error: 'Failed to create subscription record for existing customer' }, 500);
           }
         }
       }
     }
+
+    console.log('Creating checkout session with:', {
+      customer: customerId,
+      price_id,
+      mode,
+      success_url,
+      cancel_url
+    });
 
     // create Checkout Session
     const session = await stripe.checkout.sessions.create({
@@ -197,6 +220,7 @@ Deno.serve(async (req) => {
     return corsResponse({ sessionId: session.id, url: session.url });
   } catch (error: any) {
     console.error(`Checkout error: ${error.message}`);
+    console.error('Full error:', error);
     return corsResponse({ error: error.message }, 500);
   }
 });
