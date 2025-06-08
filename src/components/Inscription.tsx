@@ -137,6 +137,15 @@ const Inscription: React.FC = () => {
 
         if (signUpError) {
           console.error('Signup error:', signUpError);
+          
+          // Check for specific "user already exists" error
+          if (signUpError.message === 'User already registered' || 
+              signUpError.message.includes('already registered') ||
+              signUpError.message.includes('user_already_exists')) {
+            setError(t('form.error.userExists'));
+            return;
+          }
+          
           throw new Error(signUpError.message);
         }
 
@@ -177,7 +186,16 @@ const Inscription: React.FC = () => {
       setSuccess(true);
     } catch (err: any) {
       console.error('Registration process error:', err);
-      setError(t('form.error'));
+      
+      // Check for specific "user already exists" error in the catch block as well
+      if (err.message === 'User already registered' || 
+          err.message.includes('already registered') ||
+          err.message.includes('user_already_exists')) {
+        setError(t('form.error.userExists'));
+      } else {
+        setError(t('form.error'));
+      }
+      
       setSuccess(false);
     } finally {
       setLoading(false);
