@@ -19,7 +19,7 @@ export async function createCheckoutSession(priceId: string, mode: 'payment' | '
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message);
+    throw new Error(error.error || 'Unknown error from Stripe checkout service');
   }
 
   const { url } = await response.json();
