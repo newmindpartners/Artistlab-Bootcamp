@@ -10,6 +10,7 @@ import Inscription from './components/Inscription';
 import Footer from './components/Footer';
 import PaymentSuccess from './components/PaymentSuccess';
 import PaymentCancel from './components/PaymentCancel';
+import TestEmailButton from './components/TestEmailButton';
 
 function MainLayout() {
   return (
@@ -23,6 +24,7 @@ function MainLayout() {
         <Inscription />
       </main>
       <Footer />
+      <TestEmailButton />
     </div>
   );
 }
