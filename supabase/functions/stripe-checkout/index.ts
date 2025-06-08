@@ -119,7 +119,29 @@ Deno.serve(async (req) => {
 
       console.log(`Created new Stripe customer ${newCustomer.id} for user ${user.id}`);
 
+      // Get the next available ID for the stripe_customers table
+      const { data: maxIdData, error: maxIdError } = await supabase
+        .from('stripe_customers')
+        .select('id')
+        .order('id', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (maxIdError) {
+        console.error('Failed to get max ID from stripe_customers table', maxIdError);
+        // Try to clean up the Stripe customer
+        try {
+          await stripe.customers.del(newCustomer.id);
+        } catch (deleteError) {
+          console.error('Failed to clean up Stripe customer after max ID error:', deleteError);
+        }
+        return corsResponse({ error: 'Failed to generate customer ID' }, 500);
+      }
+
+      const nextId = (maxIdData?.id || 0) + 1;
+
       const { error: createCustomerError } = await supabase.from('stripe_customers').insert({
+        id: nextId,
         user_id: user.id,
         customer_id: newCustomer.id,
       });
@@ -139,7 +161,29 @@ Deno.serve(async (req) => {
       }
 
       if (mode === 'subscription') {
+        // Get the next available ID for the stripe_subscriptions table
+        const { data: maxSubIdData, error: maxSubIdError } = await supabase
+          .from('stripe_subscriptions')
+          .select('id')
+          .order('id', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (maxSubIdError) {
+          console.error('Failed to get max ID from stripe_subscriptions table', maxSubIdError);
+          // Try to clean up the Stripe customer
+          try {
+            await stripe.customers.del(newCustomer.id);
+          } catch (deleteError) {
+            console.error('Failed to delete Stripe customer after subscription ID error:', deleteError);
+          }
+          return corsResponse({ error: 'Failed to generate subscription ID' }, 500);
+        }
+
+        const nextSubId = (maxSubIdData?.id || 0) + 1;
+
         const { error: createSubscriptionError } = await supabase.from('stripe_subscriptions').insert({
+          id: nextSubId,
           customer_id: newCustomer.id,
           status: 'not_started',
         });
@@ -191,7 +235,29 @@ Deno.serve(async (req) => {
 
         console.log(`Created new Stripe customer ${newCustomer.id} to replace invalid customer ${customer.customer_id} for user ${user.id}`);
 
+        // Get the next available ID for the stripe_customers table
+        const { data: maxIdData, error: maxIdError } = await supabase
+          .from('stripe_customers')
+          .select('id')
+          .order('id', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (maxIdError) {
+          console.error('Failed to get max ID from stripe_customers table', maxIdError);
+          // Try to clean up the Stripe customer
+          try {
+            await stripe.customers.del(newCustomer.id);
+          } catch (deleteError) {
+            console.error('Failed to clean up Stripe customer after max ID error:', deleteError);
+          }
+          return corsResponse({ error: 'Failed to generate customer ID' }, 500);
+        }
+
+        const nextId = (maxIdData?.id || 0) + 1;
+
         const { error: createCustomerError } = await supabase.from('stripe_customers').insert({
+          id: nextId,
           user_id: user.id,
           customer_id: newCustomer.id,
         });
@@ -226,8 +292,24 @@ Deno.serve(async (req) => {
         }
 
         if (!subscription) {
+          // Get the next available ID for the stripe_subscriptions table
+          const { data: maxSubIdData, error: maxSubIdError } = await supabase
+            .from('stripe_subscriptions')
+            .select('id')
+            .order('id', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (maxSubIdError) {
+            console.error('Failed to get max ID from stripe_subscriptions table', maxSubIdError);
+            return corsResponse({ error: 'Failed to generate subscription ID' }, 500);
+          }
+
+          const nextSubId = (maxSubIdData?.id || 0) + 1;
+
           // Create subscription record for existing customer if missing
           const { error: createSubscriptionError } = await supabase.from('stripe_subscriptions').insert({
+            id: nextSubId,
             customer_id: customerId,
             status: 'not_started',
           });
