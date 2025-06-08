@@ -106,23 +106,38 @@ const Inscription: React.FC = () => {
     try {
       console.log('Starting registration process...');
       
-      // 1. First, handle user authentication
-      console.log('Checking existing user...');
-      const { data: { user: existingUser }, error: userError } = await supabase.auth.getUser();
+      // 1. Create registration in Supabase first (as anonymous user)
+      console.log('Creating registration record...');
+      const { error: registrationError } = await supabase
+        .from('registrations')
+        .insert([
+          {
+            ...formData,
+            payment_status: 'pending'
+          }
+        ]);
 
-      if (userError) {
-        console.error('Error checking existing user:', userError);
-        if (userError.message.includes('Failed to fetch') || userError.message.includes('fetch')) {
+      if (registrationError) {
+        console.error('Registration error:', registrationError);
+        if (registrationError.message.includes('Failed to fetch') || registrationError.message.includes('fetch')) {
           throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
         }
-        throw new Error(userError.message);
+        throw new Error(registrationError.message);
       }
 
+      // 2. Handle user authentication
+      console.log('Handling user authentication...');
       let session;
 
-      if (!existingUser) {
+      // Try to get existing session first
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      
+      if (existingSession) {
+        console.log('Using existing session...');
+        session = existingSession;
+      } else {
         console.log('Creating new user...');
-        // New user - sign them up first
+        // New user - sign them up
         const password = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
@@ -151,43 +166,10 @@ const Inscription: React.FC = () => {
         }
 
         session = signUpData.session;
-      } else {
-        console.log('Getting existing user session...');
-        // Existing user - get their session
-        const { data: { session: existingSession }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          if (sessionError.message.includes('Failed to fetch') || sessionError.message.includes('fetch')) {
-            throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
-          }
-          throw new Error(sessionError.message);
-        }
-        
-        session = existingSession;
       }
 
       if (!session) {
         throw new Error('No session available');
-      }
-
-      console.log('Creating registration record...');
-      // 2. Now create registration in Supabase (user is authenticated)
-      const { error: registrationError } = await supabase
-        .from('registrations')
-        .insert([
-          {
-            ...formData,
-            payment_status: 'pending'
-          }
-        ]);
-
-      if (registrationError) {
-        console.error('Registration error:', registrationError);
-        if (registrationError.message.includes('Failed to fetch') || registrationError.message.includes('fetch')) {
-          throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
-        }
-        throw new Error(registrationError.message);
       }
 
       // 3. Store the token for later use in webhook
@@ -488,8 +470,8 @@ const Inscription: React.FC = () => {
                 >
                   {loading ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white\" xmlns="http://www.w3.org/2000/svg\" fill="none\" viewBox="0 0 24 24">
-                        <circle className="opacity-25\" cx="12\" cy="12\" r="10\" stroke="currentColor\" strokeWidth="4"></circle>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                       {t('form.processing')}
