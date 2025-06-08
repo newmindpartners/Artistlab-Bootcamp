@@ -104,28 +104,13 @@ const Inscription: React.FC = () => {
     setLoading(true);
     
     try {
-      // 1. Create registration in Supabase
-      const { error: registrationError } = await supabase
-        .from('registrations')
-        .insert([
-          {
-            ...formData,
-            payment_status: 'pending'
-          }
-        ]);
-
-      if (registrationError) {
-        console.error('Registration error:', registrationError);
-        throw new Error(registrationError.message);
-      }
-
-      // 2. Check if user already exists
+      // 1. First, handle user authentication
       const { data: { user: existingUser }, error: userError } = await supabase.auth.getUser();
 
       let session;
 
       if (!existingUser) {
-        // New user - sign them up
+        // New user - sign them up first
         const password = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
@@ -166,11 +151,26 @@ const Inscription: React.FC = () => {
         throw new Error('No session available');
       }
 
-      // Store the token for later use in webhook
+      // 2. Now create registration in Supabase (user is authenticated)
+      const { error: registrationError } = await supabase
+        .from('registrations')
+        .insert([
+          {
+            ...formData,
+            payment_status: 'pending'
+          }
+        ]);
+
+      if (registrationError) {
+        console.error('Registration error:', registrationError);
+        throw new Error(registrationError.message);
+      }
+
+      // 3. Store the token for later use in webhook
       localStorage.setItem('sb-token', session.access_token);
       localStorage.setItem('registration-data', JSON.stringify(formData));
 
-      // Create Stripe checkout session
+      // 4. Create Stripe checkout session
       const checkoutUrl = await createCheckoutSession(
         products.formation.priceId,
         products.formation.mode
@@ -180,7 +180,7 @@ const Inscription: React.FC = () => {
         throw new Error('Failed to create checkout session');
       }
 
-      // Redirect to Stripe
+      // 5. Redirect to Stripe
       window.location.href = checkoutUrl;
       
       setSuccess(true);
