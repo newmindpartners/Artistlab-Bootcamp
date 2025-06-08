@@ -1,7 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import Stripe from 'npm:stripe@17.7.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
-import nodemailer from 'npm:nodemailer@6.9.9';
 
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
 const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
@@ -69,41 +68,6 @@ async function sendConfirmationEmail(formData: any) {
     console.error('Invalid location selected:', formData.date);
     console.error('Available locations:', Object.keys(locationMap));
     throw new Error(`Invalid location selected: ${formData.date}`);
-  }
-
-  // Check if SMTP credentials are available
-  const smtpUser = Deno.env.get('SMTP_USER');
-  const smtpPass = Deno.env.get('SMTP_PASS');
-
-  console.log('SMTP User configured:', !!smtpUser);
-  console.log('SMTP Pass configured:', !!smtpPass);
-
-  if (!smtpUser || !smtpPass) {
-    console.error('SMTP credentials not configured');
-    console.error('SMTP_USER exists:', !!smtpUser);
-    console.error('SMTP_PASS exists:', !!smtpPass);
-    throw new Error('Email service not configured - missing SMTP credentials');
-  }
-
-  console.log('Creating email transporter...');
-  const transporter = nodemailer.createTransporter({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: {
-      user: smtpUser,
-      pass: smtpPass
-    }
-  });
-
-  // Test the connection
-  try {
-    console.log('Testing SMTP connection...');
-    await transporter.verify();
-    console.log('SMTP connection verified successfully');
-  } catch (verifyError) {
-    console.error('SMTP connection verification failed:', verifyError);
-    throw new Error(`SMTP connection failed: ${verifyError.message}`);
   }
 
   // Determine language based on location or default to French
@@ -186,160 +150,171 @@ async function sendConfirmationEmail(formData: any) {
   console.log('Location:', location);
   console.log('Date:', date);
 
-  const mailOptions = {
-    from: '"Artist Lab CAMPUS" <info@artistlab.studio>',
-    to: formData.email,
-    subject: content.subject,
-    html: `
-      <!DOCTYPE html>
-      <html lang="${isEnglish ? 'en' : 'fr'}">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${content.subject}</title>
-      </head>
-      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-          <!-- Header -->
-          <div style="background: linear-gradient(135deg, #0EA5E9 0%, #38BDF8 100%); padding: 40px 30px; text-align: center;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-              🎬 Artist Lab CAMPUS
-            </h1>
-            <p style="color: #ffffff; margin: 15px 0 0 0; font-size: 18px; opacity: 0.95; font-weight: 500;">
-              Formation Cinéma & IA
-            </p>
-          </div>
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="${isEnglish ? 'en' : 'fr'}">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${content.subject}</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #0EA5E9 0%, #38BDF8 100%); padding: 40px 30px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            🎬 Artist Lab CAMPUS
+          </h1>
+          <p style="color: #ffffff; margin: 15px 0 0 0; font-size: 18px; opacity: 0.95; font-weight: 500;">
+            Formation Cinéma & IA
+          </p>
+        </div>
+        
+        <!-- Success Banner -->
+        <div style="background-color: #10B981; padding: 20px; text-align: center;">
+          <div style="color: white; font-size: 48px; margin-bottom: 10px;">✅</div>
+          <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">
+            ${isEnglish ? 'Registration Confirmed!' : 'Inscription Confirmée !'}
+          </h2>
+        </div>
+        
+        <!-- Main Content -->
+        <div style="padding: 40px 30px;">
+          <p style="color: #374151; font-size: 18px; line-height: 1.6; margin-bottom: 30px; font-weight: 500;">
+            ${content.greeting}
+          </p>
           
-          <!-- Success Banner -->
-          <div style="background-color: #10B981; padding: 20px; text-align: center;">
-            <div style="color: white; font-size: 48px; margin-bottom: 10px;">✅</div>
-            <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">
-              ${isEnglish ? 'Registration Confirmed!' : 'Inscription Confirmée !'}
-            </h2>
-          </div>
+          <p style="color: #374151; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+            ${content.thanks}
+          </p>
           
-          <!-- Main Content -->
-          <div style="padding: 40px 30px;">
-            <p style="color: #374151; font-size: 18px; line-height: 1.6; margin-bottom: 30px; font-weight: 500;">
-              ${content.greeting}
-            </p>
-            
-            <p style="color: #374151; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
-              ${content.thanks}
-            </p>
-            
-            <!-- Training Details -->
-            <div style="background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%); padding: 30px; border-radius: 16px; margin-bottom: 30px; border: 1px solid #D1D5DB;">
-              <h3 style="color: #0EA5E9; margin: 0 0 25px 0; font-size: 22px; font-weight: bold;">
-                ${content.detailsTitle}
-              </h3>
-              <div style="display: grid; gap: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 2px solid #E5E7EB;">
-                  <span style="color: #6B7280; font-weight: 600; font-size: 16px;">${content.location}:</span>
-                  <span style="color: #1F2937; font-weight: 700; font-size: 16px;">${location}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 2px solid #E5E7EB;">
-                  <span style="color: #6B7280; font-weight: 600; font-size: 16px;">${content.date}:</span>
-                  <span style="color: #1F2937; font-weight: 700; font-size: 16px;">${date}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 2px solid #E5E7EB;">
-                  <span style="color: #6B7280; font-weight: 600; font-size: 16px;">${content.duration}:</span>
-                  <span style="color: #1F2937; font-weight: 700; font-size: 16px;">${content.durationValue}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0;">
-                  <span style="color: #6B7280; font-weight: 600; font-size: 16px;">${content.price}:</span>
-                  <span style="color: #10B981; font-weight: 700; font-size: 18px;">${content.priceValue}</span>
-                </div>
+          <!-- Training Details -->
+          <div style="background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%); padding: 30px; border-radius: 16px; margin-bottom: 30px; border: 1px solid #D1D5DB;">
+            <h3 style="color: #0EA5E9; margin: 0 0 25px 0; font-size: 22px; font-weight: bold;">
+              ${content.detailsTitle}
+            </h3>
+            <div style="display: grid; gap: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 2px solid #E5E7EB;">
+                <span style="color: #6B7280; font-weight: 600; font-size: 16px;">${content.location}:</span>
+                <span style="color: #1F2937; font-weight: 700; font-size: 16px;">${location}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 2px solid #E5E7EB;">
+                <span style="color: #6B7280; font-weight: 600; font-size: 16px;">${content.date}:</span>
+                <span style="color: #1F2937; font-weight: 700; font-size: 16px;">${date}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 2px solid #E5E7EB;">
+                <span style="color: #6B7280; font-weight: 600; font-size: 16px;">${content.duration}:</span>
+                <span style="color: #1F2937; font-weight: 700; font-size: 16px;">${content.durationValue}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0;">
+                <span style="color: #6B7280; font-weight: 600; font-size: 16px;">${content.price}:</span>
+                <span style="color: #10B981; font-weight: 700; font-size: 18px;">${content.priceValue}</span>
               </div>
             </div>
-            
-            <!-- What You Will Learn -->
-            <div style="background-color: #FEF3C7; padding: 25px; border-radius: 12px; margin-bottom: 30px; border-left: 5px solid #F59E0B;">
-              <h3 style="color: #92400E; margin: 0 0 20px 0; font-size: 20px; font-weight: bold;">
-                ${content.whatYouWillLearn}
-              </h3>
-              <ul style="color: #92400E; font-size: 15px; line-height: 1.6; padding-left: 0; list-style: none; margin: 0;">
-                ${content.skills.map(skill => `
-                  <li style="margin-bottom: 10px; display: flex; align-items: flex-start;">
-                    <span style="color: #F59E0B; margin-right: 10px; font-weight: bold;">🎯</span>
-                    <span>${skill}</span>
-                  </li>
-                `).join('')}
-              </ul>
-            </div>
-            
-            <!-- Next Steps -->
-            <div style="margin-bottom: 30px;">
-              <h3 style="color: #0EA5E9; margin: 0 0 25px 0; font-size: 22px; font-weight: bold;">
-                ${content.nextStepsTitle}
-              </h3>
-              <ul style="color: #374151; font-size: 16px; line-height: 1.6; padding-left: 0; list-style: none; margin: 0;">
-                ${content.nextSteps.map((step, index) => `
-                  <li style="margin-bottom: 15px; display: flex; align-items: flex-start;">
-                    <span style="background: linear-gradient(135deg, #0EA5E9, #38BDF8); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; margin-right: 15px; flex-shrink: 0; margin-top: 2px;">
-                      ${index + 1}
-                    </span>
-                    <span>${step}</span>
-                  </li>
-                `).join('')}
-              </ul>
-            </div>
-            
-            <!-- Contact Info -->
-            <div style="background-color: #EBF8FF; padding: 25px; border-radius: 12px; border-left: 5px solid #0EA5E9; margin-bottom: 30px;">
-              <p style="color: #1E40AF; margin: 0; font-size: 16px; font-weight: 500;">
-                💬 ${content.contact}
-              </p>
-            </div>
-            
-            <!-- Footer Message -->
-            <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%); border-radius: 12px; margin-bottom: 20px;">
-              <p style="color: #0EA5E9; font-size: 18px; font-weight: 700; margin: 0 0 10px 0;">
-                ${content.footer}
-              </p>
-              <p style="color: #6B7280; font-size: 14px; margin: 0; font-style: italic;">
-                ${content.ps}
-              </p>
-            </div>
           </div>
           
-          <!-- Footer -->
-          <div style="background-color: #1F2937; padding: 30px; text-align: center;">
-            <p style="color: #9CA3AF; margin: 0 0 10px 0; font-size: 16px; font-weight: 600;">
-              ${content.signature}
+          <!-- What You Will Learn -->
+          <div style="background-color: #FEF3C7; padding: 25px; border-radius: 12px; margin-bottom: 30px; border-left: 5px solid #F59E0B;">
+            <h3 style="color: #92400E; margin: 0 0 20px 0; font-size: 20px; font-weight: bold;">
+              ${content.whatYouWillLearn}
+            </h3>
+            <ul style="color: #92400E; font-size: 15px; line-height: 1.6; padding-left: 0; list-style: none; margin: 0;">
+              ${content.skills.map(skill => `
+                <li style="margin-bottom: 10px; display: flex; align-items: flex-start;">
+                  <span style="color: #F59E0B; margin-right: 10px; font-weight: bold;">🎯</span>
+                  <span>${skill}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+          
+          <!-- Next Steps -->
+          <div style="margin-bottom: 30px;">
+            <h3 style="color: #0EA5E9; margin: 0 0 25px 0; font-size: 22px; font-weight: bold;">
+              ${content.nextStepsTitle}
+            </h3>
+            <ul style="color: #374151; font-size: 16px; line-height: 1.6; padding-left: 0; list-style: none; margin: 0;">
+              ${content.nextSteps.map((step, index) => `
+                <li style="margin-bottom: 15px; display: flex; align-items: flex-start;">
+                  <span style="background: linear-gradient(135deg, #0EA5E9, #38BDF8); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; margin-right: 15px; flex-shrink: 0; margin-top: 2px;">
+                    ${index + 1}
+                  </span>
+                  <span>${step}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+          
+          <!-- Contact Info -->
+          <div style="background-color: #EBF8FF; padding: 25px; border-radius: 12px; border-left: 5px solid #0EA5E9; margin-bottom: 30px;">
+            <p style="color: #1E40AF; margin: 0; font-size: 16px; font-weight: 500;">
+              💬 ${content.contact}
             </p>
-            <p style="color: #6B7280; margin: 0; font-size: 13px;">
-              Artist Lab Studio - Formation professionnelle en cinéma et IA
+          </div>
+          
+          <!-- Footer Message -->
+          <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%); border-radius: 12px; margin-bottom: 20px;">
+            <p style="color: #0EA5E9; font-size: 18px; font-weight: 700; margin: 0 0 10px 0;">
+              ${content.footer}
             </p>
-            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #374151;">
-              <p style="color: #6B7280; margin: 0; font-size: 12px;">
-                Cet email a été envoyé automatiquement suite à votre inscription confirmée.
-              </p>
-            </div>
+            <p style="color: #6B7280; font-size: 14px; margin: 0; font-style: italic;">
+              ${content.ps}
+            </p>
           </div>
         </div>
-      </body>
-      </html>
-    `
-  };
+        
+        <!-- Footer -->
+        <div style="background-color: #1F2937; padding: 30px; text-align: center;">
+          <p style="color: #9CA3AF; margin: 0 0 10px 0; font-size: 16px; font-weight: 600;">
+            ${content.signature}
+          </p>
+          <p style="color: #6B7280; margin: 0; font-size: 13px;">
+            Artist Lab Studio - Formation professionnelle en cinéma et IA
+          </p>
+          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #374151;">
+            <p style="color: #6B7280; margin: 0; font-size: 12px;">
+              Cet email a été envoyé automatiquement suite à votre inscription confirmée.
+            </p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 
   try {
-    console.log('Sending email...');
-    console.log('From:', mailOptions.from);
-    console.log('To:', mailOptions.to);
-    console.log('Subject:', mailOptions.subject);
+    console.log('Sending email using Supabase Edge SMTP...');
     
-    const result = await transporter.sendMail(mailOptions);
+    // Use Supabase's built-in fetch to send email via SMTP
+    const emailResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Artist Lab CAMPUS <noreply@artistlab.studio>',
+        to: [formData.email],
+        subject: content.subject,
+        html: htmlContent,
+      }),
+    });
+
+    if (!emailResponse.ok) {
+      const errorData = await emailResponse.text();
+      console.error('Email service error:', errorData);
+      throw new Error(`Email service error: ${emailResponse.status} - ${errorData}`);
+    }
+
+    const result = await emailResponse.json();
     console.log('✅ EMAIL SENT SUCCESSFULLY!');
-    console.log('Message ID:', result.messageId);
-    console.log('Response:', result.response);
+    console.log('Email ID:', result.id);
     
-    return { success: true, messageId: result.messageId };
+    return { success: true, emailId: result.id };
   } catch (error) {
     console.error('❌ EMAIL SENDING FAILED:');
     console.error('Error details:', error);
     console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
     throw new Error(`Failed to send confirmation email: ${error.message}`);
   }
 }
