@@ -198,6 +198,19 @@ const Inscription: React.FC = () => {
             <p className="text-white/80 mb-6">
               {t('register.description')}
             </p>
+
+            {/* Product Information */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 mb-6 border border-white/10">
+              <h3 className="text-xl font-heading font-semibold mb-3 text-accent">
+                {products.formation.name}
+              </h3>
+              <p className="text-white/70 mb-4">
+                {products.formation.description}
+              </p>
+              <div className="text-2xl font-bold text-accent">
+                {products.formation.price}
+              </div>
+            </div>
             
             <div className="inline-flex items-center bg-primary/10 px-4 py-2 rounded-full mb-4">
               <span className="font-medium">{t('register.spots')} </span>
@@ -434,7 +447,7 @@ const Inscription: React.FC = () => {
                       {t('form.processing')}
                     </>
                   ) : (
-                    t('form.submit')
+                    `${t('form.submit')} • ${products.formation.price}`
                   )}
                 </button>
                 
