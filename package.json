@@ -9,9 +9,14 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "analyze": "npx vite-bundle-analyzer",
-    "lighthouse": "npx lighthouse http://localhost:4173 --view",
-    "postinstall": "npx update-browserslist-db@latest"
+    "lighthouse": "npx lighthouse http://localhost:4173 --view"
   },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ],
   "dependencies": {
     "@supabase/supabase-js": "^2.39.7",
     "lucide-react": "^0.344.0",
