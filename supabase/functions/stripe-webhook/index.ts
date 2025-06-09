@@ -58,7 +58,7 @@ const locationMap = {
 };
 
 async function sendPaymentConfirmationEmail(formData: any, paymentDetails: any) {
-  console.log('=== SENDING PAYMENT CONFIRMATION EMAIL ===');
+  console.log('=== SENDING PAYMENT CONFIRMATION EMAIL VIA MAILGUN ===');
   console.log('Recipient:', formData.email);
   console.log('Payment amount:', paymentDetails.amount_received / 100, paymentDetails.currency.toUpperCase());
   console.log('Payment ID:', paymentDetails.id);
@@ -323,56 +323,63 @@ async function sendPaymentConfirmationEmail(formData: any, paymentDetails: any) 
     </html>
   `;
 
-  // Check if Resend API key is available
-  const resendApiKey = Deno.env.get('RESEND_API_KEY');
-  if (!resendApiKey) {
-    console.error('❌ RESEND_API_KEY environment variable is not set!');
-    throw new Error('Email service not configured - missing RESEND_API_KEY');
+  // Check if Mailgun API key and domain are available
+  const mailgunApiKey = Deno.env.get('MAILGUN_API_KEY');
+  const mailgunDomain = Deno.env.get('MAILGUN_DOMAIN');
+  
+  if (!mailgunApiKey) {
+    console.error('❌ MAILGUN_API_KEY environment variable is not set!');
+    throw new Error('Email service not configured - missing MAILGUN_API_KEY');
+  }
+  
+  if (!mailgunDomain) {
+    console.error('❌ MAILGUN_DOMAIN environment variable is not set!');
+    throw new Error('Email service not configured - missing MAILGUN_DOMAIN');
   }
 
-  console.log('✅ Resend API key found, proceeding with email send...');
+  console.log('✅ Mailgun credentials found, proceeding with email send...');
+  console.log('Mailgun domain:', mailgunDomain);
 
-  // Use Resend API to send email
+  // Use Mailgun API to send email
   try {
-    console.log('Sending payment confirmation email using Resend API...');
+    console.log('Sending payment confirmation email using Mailgun API...');
     
-    const emailResponse = await fetch('https://api.resend.com/emails', {
+    // Create form data for Mailgun API
+    const formData = new FormData();
+    formData.append('from', `Artist Lab CAMPUS <noreply@${mailgunDomain}>`);
+    formData.append('to', formData.email);
+    formData.append('subject', content.subject);
+    formData.append('html', htmlContent);
+    formData.append('h:Reply-To', 'info@artistlab.studio');
+    formData.append('o:tag', 'payment_confirmation');
+    formData.append('o:tag', `training_location_${formData.date}`);
+    formData.append('o:tag', `payment_amount_${(paymentDetails.amount_received / 100).toString()}`);
+    
+    const emailResponse = await fetch(`https://api.mailgun.net/v3/${mailgunDomain}/messages`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
+        'Authorization': `Basic ${btoa(`api:${mailgunApiKey}`)}`,
       },
-      body: JSON.stringify({
-        from: 'Artist Lab CAMPUS <onboarding@resend.dev>',
-        to: [formData.email],
-        subject: content.subject,
-        html: htmlContent,
-        reply_to: 'info@artistlab.studio',
-        tags: [
-          { name: 'category', value: 'payment_confirmation' },
-          { name: 'training_location', value: formData.date },
-          { name: 'payment_amount', value: (paymentDetails.amount_received / 100).toString() }
-        ]
-      }),
+      body: formData,
     });
 
     console.log('Email API response status:', emailResponse.status);
 
     if (!emailResponse.ok) {
       const errorData = await emailResponse.text();
-      console.error('Email service error response:', errorData);
-      throw new Error(`Email service error: ${emailResponse.status} - ${errorData}`);
+      console.error('Mailgun API error response:', errorData);
+      throw new Error(`Mailgun API error: ${emailResponse.status} - ${errorData}`);
     }
 
     const result = await emailResponse.json();
-    console.log('✅ PAYMENT CONFIRMATION EMAIL SENT SUCCESSFULLY!');
-    console.log('Email result:', result);
+    console.log('✅ PAYMENT CONFIRMATION EMAIL SENT SUCCESSFULLY VIA MAILGUN!');
+    console.log('Mailgun result:', result);
     
-    return { success: true, emailId: result.id };
+    return { success: true, messageId: result.id };
   } catch (error) {
     console.error('❌ PAYMENT CONFIRMATION EMAIL FAILED:');
     console.error('Error details:', error);
-    throw new Error(`Failed to send payment confirmation email: ${error.message}`);
+    throw new Error(`Failed to send payment confirmation email via Mailgun: ${error.message}`);
   }
 }
 
@@ -527,12 +534,12 @@ async function handleEvent(event: Stripe.Event) {
 
       // Send payment confirmation email if payment succeeded
       if (paymentIntent.status === 'succeeded') {
-        console.log('💌 Payment succeeded, sending payment confirmation email...');
+        console.log('💌 Payment succeeded, sending payment confirmation email via Mailgun...');
         try {
           const emailResult = await sendPaymentConfirmationEmail(registration, paymentIntent);
-          console.log('✅ Payment confirmation email sent successfully:', emailResult);
+          console.log('✅ Payment confirmation email sent successfully via Mailgun:', emailResult);
         } catch (emailError) {
-          console.error('❌ Failed to send payment confirmation email:', emailError);
+          console.error('❌ Failed to send payment confirmation email via Mailgun:', emailError);
           // Log the error but don't fail the webhook - payment was successful
           console.error('🚨 CRITICAL: Payment processed but confirmation email failed to send!');
           console.error('Registration ID:', registration.id);
