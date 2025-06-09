@@ -5,7 +5,7 @@ import { PerformanceMonitor } from './utils/performance';
 
 // Lazy load components for better performance
 const Header = React.lazy(() => import('./components/Header'));
-const Hero = React.lazy(() => import('./components/OptimizedHero'));
+const Hero = React.lazy(() => import('./components/Hero'));
 const Programme = React.lazy(() => import('./components/Programme'));
 const Formateur = React.lazy(() => import('./components/Formateur'));
 const Avantages = React.lazy(() => import('./components/Avantages'));
