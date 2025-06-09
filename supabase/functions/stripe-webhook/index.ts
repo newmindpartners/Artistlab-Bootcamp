@@ -282,24 +282,14 @@ async function sendConfirmationEmail(formData: any) {
     </html>
   `;
 
-  // Check if we have RESEND_API_KEY
-  const resendApiKey = Deno.env.get('RESEND_API_KEY');
-  if (!resendApiKey) {
-    console.error('❌ RESEND_API_KEY not found in environment variables');
-    console.log('Available environment variables:', Object.keys(Deno.env.toObject()));
-    throw new Error('RESEND_API_KEY environment variable is not set');
-  }
-
+  // Use Resend API to send email
   try {
     console.log('Sending email using Resend API...');
-    console.log('API Key exists:', !!resendApiKey);
-    console.log('API Key length:', resendApiKey.length);
     
-    // Use Resend API to send email
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
+        'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -311,7 +301,6 @@ async function sendConfirmationEmail(formData: any) {
     });
 
     console.log('Email API response status:', emailResponse.status);
-    console.log('Email API response headers:', Object.fromEntries(emailResponse.headers.entries()));
 
     if (!emailResponse.ok) {
       const errorData = await emailResponse.text();
@@ -327,8 +316,6 @@ async function sendConfirmationEmail(formData: any) {
   } catch (error) {
     console.error('❌ EMAIL SENDING FAILED:');
     console.error('Error details:', error);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
     throw new Error(`Failed to send confirmation email: ${error.message}`);
   }
 }
@@ -336,7 +323,6 @@ async function sendConfirmationEmail(formData: any) {
 Deno.serve(async (req) => {
   console.log('=== WEBHOOK REQUEST RECEIVED ===');
   console.log('Method:', req.method);
-  console.log('Headers:', Object.fromEntries(req.headers.entries()));
   
   try {
     if (req.method === 'OPTIONS') {
@@ -365,7 +351,6 @@ Deno.serve(async (req) => {
       console.log('✅ Webhook event constructed successfully');
       console.log('Event type:', event.type);
       console.log('Event ID:', event.id);
-      console.log('Event created:', new Date(event.created * 1000).toISOString());
     } catch (error: any) {
       console.error('❌ Webhook signature verification failed:', error.message);
       return new Response(`Webhook signature verification failed: ${error.message}`, { status: 400 });
@@ -380,7 +365,6 @@ Deno.serve(async (req) => {
     });
   } catch (error: any) {
     console.error('❌ Error processing webhook:', error);
-    console.error('Error stack:', error.stack);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
@@ -396,9 +380,6 @@ async function handleEvent(event: Stripe.Event) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
     console.log('Processing completed checkout session:', session.id);
-    console.log('Customer ID:', session.customer);
-    console.log('Payment intent:', session.payment_intent);
-    console.log('Payment status:', session.payment_status);
 
     try {
       // Get the payment intent details
@@ -407,11 +388,7 @@ async function handleEvent(event: Stripe.Event) {
       }
 
       const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string);
-      console.log('Payment intent retrieved:');
-      console.log('- Status:', paymentIntent.status);
-      console.log('- ID:', paymentIntent.id);
-      console.log('- Amount:', paymentIntent.amount);
-      console.log('- Currency:', paymentIntent.currency);
+      console.log('Payment intent status:', paymentIntent.status);
       
       // Get the customer details from Stripe
       if (!session.customer) {
@@ -419,9 +396,7 @@ async function handleEvent(event: Stripe.Event) {
       }
 
       const customer = await stripe.customers.retrieve(session.customer as string);
-      console.log('Customer retrieved:');
-      console.log('- ID:', customer.id);
-      console.log('- Email:', customer.email);
+      console.log('Customer email:', customer.email);
       
       if (!customer.email) {
         throw new Error('No customer email found in Stripe customer record');
@@ -435,7 +410,7 @@ async function handleEvent(event: Stripe.Event) {
         .select('*')
         .eq('email', customer.email)
         .order('created_at', { ascending: false })
-        .limit(5); // Get last 5 to see all recent registrations
+        .limit(5);
 
       if (fetchError) {
         console.error('Error fetching registrations:', fetchError);
@@ -443,15 +418,6 @@ async function handleEvent(event: Stripe.Event) {
       }
 
       console.log('Found registrations:', registrations?.length || 0);
-      registrations?.forEach((reg, index) => {
-        console.log(`Registration ${index + 1}:`, {
-          id: reg.id,
-          email: reg.email,
-          payment_status: reg.payment_status,
-          payment_id: reg.payment_id,
-          created_at: reg.created_at
-        });
-      });
 
       if (!registrations || registrations.length === 0) {
         console.error('No registrations found for email:', customer.email);
@@ -489,9 +455,6 @@ async function handleEvent(event: Stripe.Event) {
       }
 
       console.log('✅ Registration updated successfully');
-      console.log('- Registration ID:', registration.id);
-      console.log('- Payment ID:', paymentIntent.id);
-      console.log('- New status:', paymentIntent.status === 'succeeded' ? 'completed' : paymentIntent.status);
 
       // Send confirmation email only if payment succeeded
       if (paymentIntent.status === 'succeeded') {
@@ -501,14 +464,7 @@ async function handleEvent(event: Stripe.Event) {
           console.log('✅ Confirmation email sent successfully:', emailResult);
         } catch (emailError) {
           console.error('❌ Failed to send confirmation email:', emailError);
-          console.error('Email error details:', emailError.message);
-          console.error('Email error stack:', emailError.stack);
-          
-          // Log the registration data for debugging
-          console.log('Registration data that failed to send:', JSON.stringify(registration, null, 2));
-          
           // Don't throw here - payment was successful, email failure shouldn't fail the webhook
-          // But we should log it prominently
           console.error('🚨 CRITICAL: Payment processed but confirmation email failed to send!');
         }
       } else {
@@ -516,7 +472,6 @@ async function handleEvent(event: Stripe.Event) {
       }
     } catch (error) {
       console.error('❌ Error processing successful payment:', error);
-      console.error('Error stack:', error.stack);
       throw error;
     }
   } else if (event.type === 'checkout.session.expired') {
