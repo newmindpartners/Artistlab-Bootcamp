@@ -14,7 +14,7 @@ const Footer = React.lazy(() => import('./components/Footer'));
 const PaymentSuccess = React.lazy(() => import('./components/PaymentSuccess'));
 const PaymentCancel = React.lazy(() => import('./components/PaymentCancel'));
 
-// Simple loading component
+// Optimized loading component
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-navy flex items-center justify-center">
     <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
@@ -61,12 +61,8 @@ function MainLayout() {
 function App() {
   // Initialize performance monitoring
   React.useEffect(() => {
-    try {
-      const monitor = PerformanceMonitor.getInstance();
-      monitor.reportWebVitals();
-    } catch (error) {
-      console.log('Performance monitoring not available');
-    }
+    const monitor = PerformanceMonitor.getInstance();
+    monitor.reportWebVitals();
   }, []);
 
   return (
