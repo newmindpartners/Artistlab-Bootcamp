@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     exclude: ['lucide-react'],
+    include: ['react', 'react-dom', 'react-router-dom']
   },
   build: {
     // Enable code splitting
@@ -24,9 +25,17 @@ export default defineConfig({
       }
     },
     // Optimize chunk size
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500,
     // Enable source maps for production debugging
-    sourcemap: true
+    sourcemap: false,
+    // Minify for better compression
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    }
   },
   // Performance optimizations
   server: {

@@ -2,7 +2,6 @@ import React from 'react';
 import { Award, Film, Lightbulb } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { usePerformanceTracking } from '../hooks/usePerformance';
-import LazyImage from './LazyImage';
 
 const Formateur: React.FC = () => {
   usePerformanceTracking('Formateur');
@@ -14,12 +13,13 @@ const Formateur: React.FC = () => {
         <div className="flex flex-col md:flex-row items-center gap-12">
           <div className="md:w-1/2">
             <div className="rounded-xl overflow-hidden border-2 border-primary/30 relative">
-              <LazyImage
+              <img
                 src="/Theo-Mahy-Ma-Somga.jpeg"
                 alt="Théo Mahy-Ma-Somga"
                 className="w-full h-auto object-cover aspect-[4/5]"
                 width={600}
                 height={750}
+                loading="lazy"
               />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-navy/90 to-transparent pt-20 pb-4 px-6 text-right">
                 <h3 className="text-xl font-heading font-bold text-white">Théo Mahy-Ma-Somga</h3>

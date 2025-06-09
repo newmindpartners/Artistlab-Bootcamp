@@ -20,6 +20,8 @@ body {
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Optimize font loading */
+  font-display: swap;
 }
 
 @layer base {
@@ -31,15 +33,18 @@ body {
 
 @layer components {
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#0EA5E9] via-[#38BDF8] to-[#0EA5E9] bg-[length:200%_auto] animate-gradient;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#0EA5E9] via-[#38BDF8] to-[#0EA5E9] bg-[length:200%_auto];
+    animation: gradient 8s linear infinite;
   }
   
   .bg-gradient-custom {
-    @apply bg-gradient-to-r from-[#0EA5E9] via-[#38BDF8] to-[#0EA5E9] bg-[length:200%_auto] animate-gradient;
+    @apply bg-gradient-to-r from-[#0EA5E9] via-[#38BDF8] to-[#0EA5E9] bg-[length:200%_auto];
+    animation: gradient 8s linear infinite;
   }
   
   .button-primary {
-    @apply inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-[#0EA5E9] via-[#38BDF8] to-[#0EA5E9] bg-[length:200%_auto] rounded-lg transition-all duration-200 hover:opacity-90 animate-gradient;
+    @apply inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-[#0EA5E9] via-[#38BDF8] to-[#0EA5E9] bg-[length:200%_auto] rounded-lg transition-all duration-200 hover:opacity-90;
+    animation: gradient 8s linear infinite;
   }
   
   .button-secondary {
@@ -56,10 +61,6 @@ body {
 }
 
 @layer utilities {
-  .animate-gradient {
-    animation: gradient 8s linear infinite;
-  }
-
   @keyframes gradient {
     0% {
       background-position: 0% 50%;
@@ -73,7 +74,7 @@ body {
   }
 }
 
-/* Custom Scrollbar */
+/* Optimize scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -89,4 +90,9 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-accent);
+}
+
+/* Optimize image loading */
+img {
+  content-visibility: auto;
 }

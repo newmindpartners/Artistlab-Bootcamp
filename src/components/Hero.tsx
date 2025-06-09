@@ -3,11 +3,8 @@ import { Film, Star, Users, Calendar } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { products } from '../stripe-config';
 import { usePerformanceTracking } from '../hooks/usePerformance';
-import LazyImage from './LazyImage';
 
-// Lazy load the YouTube component
-const LazyYouTubeEmbed = React.lazy(() => import('./YouTubeEmbed'));
-
+// Remove heavy YouTube component from initial load
 const Hero: React.FC = () => {
   usePerformanceTracking('Hero');
   const { t } = useLanguage();
@@ -15,11 +12,14 @@ const Hero: React.FC = () => {
   return (
     <section className="pt-28 pb-20 relative">
       <div className="absolute inset-0">
-        {/* Optimized background image */}
-        <LazyImage
-          src="https://images.pexels.com/photos/2773498/pexels-photo-2773498.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080"
-          alt="Cinema background"
-          className="absolute inset-0 w-full h-full object-cover"
+        {/* Use optimized background with better compression */}
+        <div 
+          className="absolute inset-0 w-full h-full bg-cover bg-center"
+          style={{
+            backgroundImage: 'url(https://images.pexels.com/photos/2773498/pexels-photo-2773498.jpeg?auto=compress&cs=tinysrgb&w=800&h=600)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
         />
         <div className="absolute inset-0 backdrop-blur-sm" />
         <div className="absolute inset-0 bg-gradient-to-b from-navy/95 via-navy/85 to-navy/95" />
@@ -42,15 +42,25 @@ const Hero: React.FC = () => {
             {t('hero.description')}
           </p>
 
-          {/* Lazy loaded YouTube Video */}
+          {/* Replace heavy video with optimized thumbnail */}
           <div className="relative mb-10 rounded-xl overflow-hidden shadow-2xl">
-            <Suspense fallback={
-              <div className="aspect-w-16 aspect-h-9 bg-gray-800 rounded-xl flex items-center justify-center">
-                <div className="text-white">Loading video...</div>
+            <div className="aspect-w-16 aspect-h-9 bg-gray-900 rounded-xl cursor-pointer relative group">
+              <img
+                src="https://img.youtube.com/vi/xcPL9an8XKk/maxresdefault.jpg"
+                alt="Artist Lab CAMPUS Presentation"
+                className="w-full h-full object-cover rounded-xl"
+                loading="lazy"
+                width="1280"
+                height="720"
+              />
+              <div className="absolute inset-0 bg-black/30 rounded-xl flex items-center justify-center group-hover:bg-black/20 transition-colors">
+                <div className="bg-red-600 rounded-full p-4 group-hover:scale-110 transition-transform">
+                  <svg className="h-8 w-8 text-white fill-current" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </div>
               </div>
-            }>
-              <LazyYouTubeEmbed videoId="xcPL9an8XKk" />
-            </Suspense>
+            </div>
           </div>
           
           <div className="flex flex-wrap justify-center gap-4 mb-10">
