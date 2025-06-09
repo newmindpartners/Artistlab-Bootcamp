@@ -70,6 +70,50 @@ npm run dev
 
 L'application sera disponible sur `http://localhost:5173`
 
+## 🌍 Déploiement sur Netlify
+
+### Configuration des variables d'environnement
+
+Dans votre dashboard Netlify, allez dans **Site settings > Environment variables** et ajoutez :
+
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key_here
+```
+
+### Étapes de déploiement
+
+1. **Connectez votre repository GitHub à Netlify**
+2. **Configurez les paramètres de build** :
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+   - Node version: `18`
+
+3. **Ajoutez les variables d'environnement** (voir ci-dessus)
+
+4. **Déployez** : Le site se déploiera automatiquement
+
+### Vérification du déploiement
+
+Après le déploiement, vérifiez que :
+- ✅ Le site se charge sans erreurs
+- ✅ Les variables d'environnement sont correctement configurées
+- ✅ La connexion Supabase fonctionne
+- ✅ Les formulaires d'inscription fonctionnent
+
+## 🔧 Résolution des problèmes de déploiement
+
+### Erreur "Failed to fetch"
+- Vérifiez que les variables d'environnement sont correctement configurées dans Netlify
+- Assurez-vous que l'URL Supabase est correcte
+
+### Erreur 404 sur les routes
+- Le fichier `netlify.toml` gère les redirections SPA
+
+### Problèmes de build
+- Vérifiez que Node.js 18+ est utilisé
+- Assurez-vous que toutes les dépendances sont installées
+
 ## 📊 Structure de la base de données
 
 ### Tables principales
@@ -99,21 +143,6 @@ L'application utilise Mailgun pour l'envoi d'emails :
 1. Configurez votre domaine `artistlab-bootcamp.com` dans Mailgun
 2. Ajoutez les enregistrements DNS requis
 3. Configurez les variables SMTP dans Supabase
-
-## 🌍 Déploiement
-
-### Netlify (Recommandé)
-
-1. Connectez votre repository GitHub à Netlify
-2. Configurez les variables d'environnement
-3. Le déploiement se fait automatiquement
-
-### Variables d'environnement de production
-
-```env
-VITE_SUPABASE_URL=your_production_supabase_url
-VITE_SUPABASE_ANON_KEY=your_production_supabase_anon_key
-```
 
 ## 🎨 Design System
 
