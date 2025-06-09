@@ -216,10 +216,11 @@ async function sendTestConfirmationEmail(formData: any) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Artist Lab CAMPUS <noreply@artistlab.studio>',
+        from: 'Artist Lab CAMPUS <onboarding@resend.dev>',
         to: [formData.email],
         subject: content.subject,
         html: htmlContent,
+        reply_to: 'info@artistlab.studio',
       }),
     });
 

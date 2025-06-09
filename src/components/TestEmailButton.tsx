@@ -22,7 +22,7 @@ const TestEmailButton: React.FC = () => {
           body: JSON.stringify({
             prenom: 'Test',
             nom: 'User',
-            email: 'test@artistlab.studio', // Change this to your email
+            email: 'your-email@example.com', // ⚠️ CHANGE THIS TO YOUR EMAIL
             date: 'paris'
           }),
         }
@@ -44,11 +44,20 @@ const TestEmailButton: React.FC = () => {
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
-      <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+      <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 max-w-sm">
+        <div className="mb-3">
+          <p className="text-xs text-white/70 mb-2">
+            📧 Test Email Configuration
+          </p>
+          <p className="text-xs text-yellow-300 mb-2">
+            ⚠️ Update email in TestEmailButton.tsx
+          </p>
+        </div>
+        
         <button
           onClick={testEmail}
           disabled={loading}
-          className="flex items-center gap-2 bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 w-full justify-center"
         >
           <Mail className="h-4 w-4" />
           {loading ? 'Sending...' : 'Test Email'}
@@ -62,6 +71,9 @@ const TestEmailButton: React.FC = () => {
             </div>
             <div className="text-xs text-green-300 mt-1">
               Email ID: {result.result?.id}
+            </div>
+            <div className="text-xs text-green-300 mt-1">
+              From: onboarding@resend.dev
             </div>
           </div>
         )}
