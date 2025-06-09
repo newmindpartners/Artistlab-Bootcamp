@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
         
         // Create form data for Mailgun API using SMTP credentials
         const formData = new FormData();
-        formData.append('from', `Artist Lab CAMPUS Test <noreply@${mailgunDomain}>`);
+        formData.append('from', `Artist Lab CAMPUS <noreply@artistlab-bootcamp.com>`);
         formData.append('to', 'test@example.com'); // This will fail but we can see the error
         formData.append('subject', 'Test Email from Webhook via SMTP');
         formData.append('html', '<h1>Test Email</h1><p>This is a test email from the webhook function using Mailgun SMTP credentials.</p>');
@@ -66,7 +66,8 @@ Deno.serve(async (req) => {
           response: responseText,
           service: 'Mailgun SMTP',
           smtpUser: mailgunSmtpUser,
-          domain: mailgunDomain
+          domain: mailgunDomain,
+          fromAddress: 'noreply@artistlab-bootcamp.com'
         };
         
         console.log('Mailgun SMTP API test result:', emailTestResult);
@@ -75,7 +76,8 @@ Deno.serve(async (req) => {
           error: error.message,
           service: 'Mailgun SMTP',
           smtpUser: mailgunSmtpUser,
-          domain: mailgunDomain
+          domain: mailgunDomain,
+          fromAddress: 'noreply@artistlab-bootcamp.com'
         };
         console.error('Mailgun SMTP API test failed:', error);
       }
@@ -83,9 +85,10 @@ Deno.serve(async (req) => {
       emailTestResult = {
         error: 'Mailgun SMTP credentials not configured',
         service: 'Mailgun SMTP',
+        fromAddress: 'noreply@artistlab-bootcamp.com',
         required: [
-          'MAILGUN_DOMAIN',
-          'MAILGUN_SMTP_USER (should be postmaster@YOUR_DOMAIN)',
+          'MAILGUN_DOMAIN (should be artistlab-bootcamp.com or your domain)',
+          'MAILGUN_SMTP_USER (should be postmaster@artistlab-bootcamp.com)',
           'MAILGUN_SMTP_PASSWORD (your SMTP password from Mailgun)'
         ]
       };
@@ -96,16 +99,22 @@ Deno.serve(async (req) => {
       environment: envStatus,
       emailTest: emailTestResult,
       message: 'Webhook test completed with Mailgun SMTP configuration',
+      emailConfiguration: {
+        fromAddress: 'noreply@artistlab-bootcamp.com',
+        replyTo: 'info@artistlab.studio',
+        domain: 'artistlab-bootcamp.com'
+      },
       instructions: {
         setup: [
           '1. Get your Mailgun domain from https://app.mailgun.com/app/domains',
-          '2. Set MAILGUN_DOMAIN to your domain (e.g., mg.yourdomain.com)',
-          '3. Set MAILGUN_SMTP_USER to postmaster@YOUR_DOMAIN',
+          '2. Set MAILGUN_DOMAIN to artistlab-bootcamp.com',
+          '3. Set MAILGUN_SMTP_USER to postmaster@artistlab-bootcamp.com',
           '4. Set MAILGUN_SMTP_PASSWORD to your SMTP password from Mailgun dashboard',
-          '5. Verify your domain in Mailgun and add DNS records'
+          '5. Verify your domain in Mailgun and add DNS records',
+          '6. Emails will be sent from noreply@artistlab-bootcamp.com'
         ],
         equivalent_swaks_command: mailgunDomain && mailgunSmtpUser && mailgunSmtpPassword ? 
-          `./swaks --auth --server smtp.eu.mailgun.org --au ${mailgunSmtpUser} --ap ${mailgunSmtpPassword} --to recipient@example.com --h-Subject: "Hello" --body 'Testing Mailgun SMTP!'` :
+          `./swaks --auth --server smtp.eu.mailgun.org --au ${mailgunSmtpUser} --ap ${mailgunSmtpPassword} --to recipient@example.com --from noreply@artistlab-bootcamp.com --h-Subject: "Hello" --body 'Testing Mailgun SMTP!'` :
           'Configure environment variables first'
       }
     };

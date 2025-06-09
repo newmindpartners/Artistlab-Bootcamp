@@ -352,31 +352,9 @@ async function sendPaymentConfirmationEmailSMTP(formData: any, paymentDetails: a
   try {
     console.log('Sending payment confirmation email using Mailgun SMTP...');
     
-    // Create the email message in RFC 2822 format
-    const boundary = `----=_NextPart_${Date.now()}_${Math.random().toString(36)}`;
-    const emailMessage = [
-      `From: Artist Lab CAMPUS <noreply@${mailgunDomain}>`,
-      `To: ${formData.email}`,
-      `Reply-To: info@artistlab.studio`,
-      `Subject: ${content.subject}`,
-      `MIME-Version: 1.0`,
-      `Content-Type: multipart/alternative; boundary="${boundary}"`,
-      `X-Mailgun-Tag: payment_confirmation`,
-      `X-Mailgun-Tag: training_location_${formData.date}`,
-      `X-Mailgun-Tag: payment_amount_${(paymentDetails.amount_received / 100).toString()}`,
-      ``,
-      `--${boundary}`,
-      `Content-Type: text/html; charset=UTF-8`,
-      `Content-Transfer-Encoding: 8bit`,
-      ``,
-      htmlContent,
-      ``,
-      `--${boundary}--`
-    ].join('\r\n');
-
     // Send via Mailgun SMTP using fetch to their API (more reliable than raw SMTP in edge functions)
     const formData_smtp = new FormData();
-    formData_smtp.append('from', `Artist Lab CAMPUS <noreply@${mailgunDomain}>`);
+    formData_smtp.append('from', `Artist Lab CAMPUS <noreply@artistlab-bootcamp.com>`);
     formData_smtp.append('to', formData.email);
     formData_smtp.append('subject', content.subject);
     formData_smtp.append('html', htmlContent);
