@@ -26,7 +26,7 @@ export default defineConfig({
     },
     // Optimize chunk size
     chunkSizeWarningLimit: 500,
-    // Enable source maps for production debugging
+    // Disable source maps for faster builds
     sourcemap: false,
     // Minify for better compression
     minify: 'terser',

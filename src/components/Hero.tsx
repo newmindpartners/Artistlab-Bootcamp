@@ -1,10 +1,9 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import { Film, Star, Users, Calendar } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { products } from '../stripe-config';
 import { usePerformanceTracking } from '../hooks/usePerformance';
 
-// Remove heavy YouTube component from initial load
 const Hero: React.FC = () => {
   usePerformanceTracking('Hero');
   const { t } = useLanguage();
@@ -12,17 +11,8 @@ const Hero: React.FC = () => {
   return (
     <section className="pt-28 pb-20 relative">
       <div className="absolute inset-0">
-        {/* Use optimized background with better compression */}
-        <div 
-          className="absolute inset-0 w-full h-full bg-cover bg-center"
-          style={{
-            backgroundImage: 'url(https://images.pexels.com/photos/2773498/pexels-photo-2773498.jpeg?auto=compress&cs=tinysrgb&w=800&h=600)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        />
-        <div className="absolute inset-0 backdrop-blur-sm" />
-        <div className="absolute inset-0 bg-gradient-to-b from-navy/95 via-navy/85 to-navy/95" />
+        {/* Simplified background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-navy via-navy/95 to-navy"></div>
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
@@ -42,24 +32,17 @@ const Hero: React.FC = () => {
             {t('hero.description')}
           </p>
 
-          {/* Replace heavy video with optimized thumbnail */}
-          <div className="relative mb-10 rounded-xl overflow-hidden shadow-2xl">
-            <div className="aspect-w-16 aspect-h-9 bg-gray-900 rounded-xl cursor-pointer relative group">
-              <img
-                src="https://img.youtube.com/vi/xcPL9an8XKk/maxresdefault.jpg"
-                alt="Artist Lab CAMPUS Presentation"
-                className="w-full h-full object-cover rounded-xl"
-                loading="lazy"
-                width="1280"
-                height="720"
-              />
-              <div className="absolute inset-0 bg-black/30 rounded-xl flex items-center justify-center group-hover:bg-black/20 transition-colors">
-                <div className="bg-red-600 rounded-full p-4 group-hover:scale-110 transition-transform">
-                  <svg className="h-8 w-8 text-white fill-current" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                </div>
+          {/* Simple video placeholder */}
+          <div className="relative mb-10 rounded-xl overflow-hidden shadow-2xl bg-gray-900 aspect-video">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="bg-red-600 rounded-full p-4">
+                <svg className="h-8 w-8 text-white fill-current" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
               </div>
+            </div>
+            <div className="absolute bottom-4 left-4 text-white text-sm bg-black/50 px-2 py-1 rounded">
+              Formation Cinéma & IA - Présentation
             </div>
           </div>
           
