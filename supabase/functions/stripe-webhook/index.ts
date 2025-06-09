@@ -323,6 +323,15 @@ async function sendPaymentConfirmationEmail(formData: any, paymentDetails: any) 
     </html>
   `;
 
+  // Check if Resend API key is available
+  const resendApiKey = Deno.env.get('RESEND_API_KEY');
+  if (!resendApiKey) {
+    console.error('❌ RESEND_API_KEY environment variable is not set!');
+    throw new Error('Email service not configured - missing RESEND_API_KEY');
+  }
+
+  console.log('✅ Resend API key found, proceeding with email send...');
+
   // Use Resend API to send email
   try {
     console.log('Sending payment confirmation email using Resend API...');
@@ -330,7 +339,7 @@ async function sendPaymentConfirmationEmail(formData: any, paymentDetails: any) 
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
+        'Authorization': `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
