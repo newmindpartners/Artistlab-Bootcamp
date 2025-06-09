@@ -6,7 +6,6 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     exclude: ['lucide-react'],
-    include: ['react', 'react-dom', 'react-router-dom', '@supabase/supabase-js']
   },
   build: {
     // Enable code splitting
@@ -21,27 +20,13 @@ export default defineConfig({
           supabase: ['@supabase/supabase-js'],
           // UI chunk
           ui: ['lucide-react']
-        },
-        // Optimize chunk naming
-        chunkFileNames: 'assets/[name]-[hash].js',
-        entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
+        }
       }
     },
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
     // Enable source maps for production debugging
-    sourcemap: false, // Disable in production for smaller builds
-    // Enable minification
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // Remove console.logs in production
-        drop_debugger: true
-      }
-    },
-    // Target modern browsers for smaller bundles
-    target: 'es2020'
+    sourcemap: true
   },
   // Performance optimizations
   server: {
@@ -50,22 +35,6 @@ export default defineConfig({
     // Optimize dev server
     hmr: {
       overlay: false
-    },
-    // Enable compression
-    middlewareMode: false
-  },
-  // CSS optimization
-  css: {
-    devSourcemap: false,
-    postcss: {
-      plugins: []
     }
-  },
-  // Enable experimental features for better performance
-  esbuild: {
-    // Remove console.logs in production
-    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
-    // Enable tree shaking
-    treeShaking: true
   }
 });
