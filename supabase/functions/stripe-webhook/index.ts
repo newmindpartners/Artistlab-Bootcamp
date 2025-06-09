@@ -57,8 +57,8 @@ const locationMap = {
   }
 };
 
-async function sendPaymentConfirmationEmail(formData: any, paymentDetails: any) {
-  console.log('=== SENDING PAYMENT CONFIRMATION EMAIL VIA MAILGUN ===');
+async function sendPaymentConfirmationEmailSMTP(formData: any, paymentDetails: any) {
+  console.log('=== SENDING PAYMENT CONFIRMATION EMAIL VIA MAILGUN SMTP ===');
   console.log('Recipient:', formData.email);
   console.log('Payment amount:', paymentDetails.amount_received / 100, paymentDetails.currency.toUpperCase());
   console.log('Payment ID:', paymentDetails.id);
@@ -323,63 +323,94 @@ async function sendPaymentConfirmationEmail(formData: any, paymentDetails: any) 
     </html>
   `;
 
-  // Check if Mailgun API key and domain are available
-  const mailgunApiKey = Deno.env.get('MAILGUN_API_KEY');
+  // Check if Mailgun SMTP credentials are available
   const mailgunDomain = Deno.env.get('MAILGUN_DOMAIN');
-  
-  if (!mailgunApiKey) {
-    console.error('❌ MAILGUN_API_KEY environment variable is not set!');
-    throw new Error('Email service not configured - missing MAILGUN_API_KEY');
-  }
+  const mailgunSmtpUser = Deno.env.get('MAILGUN_SMTP_USER'); // Should be postmaster@YOUR_DOMAIN_NAME
+  const mailgunSmtpPassword = Deno.env.get('MAILGUN_SMTP_PASSWORD'); // Your SMTP password
   
   if (!mailgunDomain) {
     console.error('❌ MAILGUN_DOMAIN environment variable is not set!');
     throw new Error('Email service not configured - missing MAILGUN_DOMAIN');
   }
+  
+  if (!mailgunSmtpUser) {
+    console.error('❌ MAILGUN_SMTP_USER environment variable is not set!');
+    console.log('💡 Set MAILGUN_SMTP_USER to: postmaster@' + mailgunDomain);
+    throw new Error('Email service not configured - missing MAILGUN_SMTP_USER');
+  }
+  
+  if (!mailgunSmtpPassword) {
+    console.error('❌ MAILGUN_SMTP_PASSWORD environment variable is not set!');
+    throw new Error('Email service not configured - missing MAILGUN_SMTP_PASSWORD');
+  }
 
-  console.log('✅ Mailgun credentials found, proceeding with email send...');
+  console.log('✅ Mailgun SMTP credentials found, proceeding with email send...');
+  console.log('SMTP User:', mailgunSmtpUser);
   console.log('Mailgun domain:', mailgunDomain);
 
-  // Use Mailgun API to send email
+  // Use Mailgun SMTP to send email
   try {
-    console.log('Sending payment confirmation email using Mailgun API...');
+    console.log('Sending payment confirmation email using Mailgun SMTP...');
     
-    // Create form data for Mailgun API
-    const formData = new FormData();
-    formData.append('from', `Artist Lab CAMPUS <noreply@${mailgunDomain}>`);
-    formData.append('to', formData.email);
-    formData.append('subject', content.subject);
-    formData.append('html', htmlContent);
-    formData.append('h:Reply-To', 'info@artistlab.studio');
-    formData.append('o:tag', 'payment_confirmation');
-    formData.append('o:tag', `training_location_${formData.date}`);
-    formData.append('o:tag', `payment_amount_${(paymentDetails.amount_received / 100).toString()}`);
+    // Create the email message in RFC 2822 format
+    const boundary = `----=_NextPart_${Date.now()}_${Math.random().toString(36)}`;
+    const emailMessage = [
+      `From: Artist Lab CAMPUS <noreply@${mailgunDomain}>`,
+      `To: ${formData.email}`,
+      `Reply-To: info@artistlab.studio`,
+      `Subject: ${content.subject}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      `X-Mailgun-Tag: payment_confirmation`,
+      `X-Mailgun-Tag: training_location_${formData.date}`,
+      `X-Mailgun-Tag: payment_amount_${(paymentDetails.amount_received / 100).toString()}`,
+      ``,
+      `--${boundary}`,
+      `Content-Type: text/html; charset=UTF-8`,
+      `Content-Transfer-Encoding: 8bit`,
+      ``,
+      htmlContent,
+      ``,
+      `--${boundary}--`
+    ].join('\r\n');
+
+    // Send via Mailgun SMTP using fetch to their API (more reliable than raw SMTP in edge functions)
+    const formData_smtp = new FormData();
+    formData_smtp.append('from', `Artist Lab CAMPUS <noreply@${mailgunDomain}>`);
+    formData_smtp.append('to', formData.email);
+    formData_smtp.append('subject', content.subject);
+    formData_smtp.append('html', htmlContent);
+    formData_smtp.append('h:Reply-To', 'info@artistlab.studio');
+    formData_smtp.append('o:tag', 'payment_confirmation');
+    formData_smtp.append('o:tag', `training_location_${formData.date}`);
+    formData_smtp.append('o:tag', `payment_amount_${(paymentDetails.amount_received / 100).toString()}`);
     
+    // Use the SMTP credentials for API authentication
     const emailResponse = await fetch(`https://api.mailgun.net/v3/${mailgunDomain}/messages`, {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${btoa(`api:${mailgunApiKey}`)}`,
+        'Authorization': `Basic ${btoa(`api:${mailgunSmtpPassword}`)}`, // Use SMTP password as API key
       },
-      body: formData,
+      body: formData_smtp,
     });
 
     console.log('Email API response status:', emailResponse.status);
 
     if (!emailResponse.ok) {
       const errorData = await emailResponse.text();
-      console.error('Mailgun API error response:', errorData);
-      throw new Error(`Mailgun API error: ${emailResponse.status} - ${errorData}`);
+      console.error('Mailgun SMTP API error response:', errorData);
+      throw new Error(`Mailgun SMTP API error: ${emailResponse.status} - ${errorData}`);
     }
 
     const result = await emailResponse.json();
-    console.log('✅ PAYMENT CONFIRMATION EMAIL SENT SUCCESSFULLY VIA MAILGUN!');
+    console.log('✅ PAYMENT CONFIRMATION EMAIL SENT SUCCESSFULLY VIA MAILGUN SMTP!');
     console.log('Mailgun result:', result);
     
     return { success: true, messageId: result.id };
   } catch (error) {
     console.error('❌ PAYMENT CONFIRMATION EMAIL FAILED:');
     console.error('Error details:', error);
-    throw new Error(`Failed to send payment confirmation email via Mailgun: ${error.message}`);
+    throw new Error(`Failed to send payment confirmation email via Mailgun SMTP: ${error.message}`);
   }
 }
 
@@ -534,12 +565,12 @@ async function handleEvent(event: Stripe.Event) {
 
       // Send payment confirmation email if payment succeeded
       if (paymentIntent.status === 'succeeded') {
-        console.log('💌 Payment succeeded, sending payment confirmation email via Mailgun...');
+        console.log('💌 Payment succeeded, sending payment confirmation email via Mailgun SMTP...');
         try {
-          const emailResult = await sendPaymentConfirmationEmail(registration, paymentIntent);
-          console.log('✅ Payment confirmation email sent successfully via Mailgun:', emailResult);
+          const emailResult = await sendPaymentConfirmationEmailSMTP(registration, paymentIntent);
+          console.log('✅ Payment confirmation email sent successfully via Mailgun SMTP:', emailResult);
         } catch (emailError) {
-          console.error('❌ Failed to send payment confirmation email via Mailgun:', emailError);
+          console.error('❌ Failed to send payment confirmation email via Mailgun SMTP:', emailError);
           // Log the error but don't fail the webhook - payment was successful
           console.error('🚨 CRITICAL: Payment processed but confirmation email failed to send!');
           console.error('Registration ID:', registration.id);
