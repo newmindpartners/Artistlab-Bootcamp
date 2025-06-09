@@ -1,18 +1,27 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Film, Star, Users, Calendar } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { products } from '../stripe-config';
+import { usePerformanceTracking } from '../hooks/usePerformance';
+import LazyImage from './LazyImage';
+
+// Lazy load the YouTube component
+const LazyYouTubeEmbed = React.lazy(() => import('./YouTubeEmbed'));
 
 const Hero: React.FC = () => {
+  usePerformanceTracking('Hero');
   const { t } = useLanguage();
 
   return (
     <section className="pt-28 pb-20 relative">
       <div className="absolute inset-0">
-        {/* Background image with enhanced blur */}
-        <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/2773498/pexels-photo-2773498.jpeg')] bg-cover bg-center bg-fixed" />
+        {/* Optimized background image */}
+        <LazyImage
+          src="https://images.pexels.com/photos/2773498/pexels-photo-2773498.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080"
+          alt="Cinema background"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
         <div className="absolute inset-0 backdrop-blur-sm" />
-        {/* Darker overlay with gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-navy/95 via-navy/85 to-navy/95" />
       </div>
 
@@ -33,17 +42,15 @@ const Hero: React.FC = () => {
             {t('hero.description')}
           </p>
 
-          {/* YouTube Video */}
+          {/* Lazy loaded YouTube Video */}
           <div className="relative mb-10 rounded-xl overflow-hidden shadow-2xl">
-            <div className="aspect-w-16 aspect-h-9">
-              <iframe
-                src="https://www.youtube.com/embed/xcPL9an8XKk?autoplay=0&rel=0"
-                title="Artist Lab CAMPUS Presentation"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full rounded-xl"
-              />
-            </div>
+            <Suspense fallback={
+              <div className="aspect-w-16 aspect-h-9 bg-gray-800 rounded-xl flex items-center justify-center">
+                <div className="text-white">Loading video...</div>
+              </div>
+            }>
+              <LazyYouTubeEmbed videoId="xcPL9an8XKk" />
+            </Suspense>
           </div>
           
           <div className="flex flex-wrap justify-center gap-4 mb-10">
