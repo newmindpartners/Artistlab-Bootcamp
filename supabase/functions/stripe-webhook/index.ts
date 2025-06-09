@@ -6,7 +6,7 @@ const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
 const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
 const stripe = new Stripe(stripeSecret, {
   appInfo: {
-    name: 'Bolt Integration',
+    name: 'Artist Lab CAMPUS',
     version: '1.0.0',
   },
   apiVersion: '2023-10-16',
@@ -57,87 +57,97 @@ const locationMap = {
   }
 };
 
-async function sendConfirmationEmail(formData: any) {
-  console.log('=== STARTING EMAIL SEND PROCESS ===');
-  console.log('Recipient email:', formData.email);
-  console.log('Registration data:', JSON.stringify(formData, null, 2));
+async function sendPaymentConfirmationEmail(formData: any, paymentDetails: any) {
+  console.log('=== SENDING PAYMENT CONFIRMATION EMAIL ===');
+  console.log('Recipient:', formData.email);
+  console.log('Payment amount:', paymentDetails.amount_received / 100, paymentDetails.currency.toUpperCase());
+  console.log('Payment ID:', paymentDetails.id);
   
   const locationInfo = locationMap[formData.date as keyof typeof locationMap];
 
   if (!locationInfo) {
     console.error('Invalid location selected:', formData.date);
-    console.error('Available locations:', Object.keys(locationMap));
     throw new Error(`Invalid location selected: ${formData.date}`);
   }
 
-  // Determine language based on location or default to French
+  // Determine language based on location
   const isEnglish = formData.date === 'london';
   console.log('Email language:', isEnglish ? 'English' : 'French');
   
   const emailContent = {
     fr: {
-      subject: '✅ Confirmation d\'inscription - Formation Cinéma & IA - Artist Lab CAMPUS',
+      subject: '🎉 Paiement confirmé - Formation Cinéma & IA - Artist Lab CAMPUS',
       greeting: `Bonjour ${formData.prenom} ${formData.nom},`,
-      thanks: 'Félicitations ! Votre inscription à notre formation "Cinéma & IA" est confirmée. Votre paiement a été traité avec succès.',
-      detailsTitle: '📋 Détails de votre formation',
+      paymentSuccess: 'Excellente nouvelle ! Votre paiement a été traité avec succès et votre place est maintenant réservée pour notre formation "Cinéma & IA".',
+      paymentDetailsTitle: '💳 Détails du paiement',
+      paymentId: 'ID de transaction',
+      amount: 'Montant payé',
+      paymentDate: 'Date de paiement',
+      paymentMethod: 'Méthode de paiement',
+      trainingDetailsTitle: '📋 Détails de votre formation',
       location: 'Lieu',
       date: 'Date',
       duration: 'Durée',
       durationValue: '2 jours intensifs (14 heures de formation)',
-      price: 'Prix',
-      priceValue: '€1.00 (prix de lancement)',
-      nextStepsTitle: '🚀 Prochaines étapes',
+      nextStepsTitle: '🚀 Prochaines étapes importantes',
       nextSteps: [
-        'Vous recevrez un email avec le programme détaillé et les outils à installer dans les 48h',
-        'Les informations pratiques (adresse exacte, horaires, matériel à apporter) vous seront envoyées 1 semaine avant la formation',
+        'Vous recevrez un email avec le programme détaillé et la liste des outils à installer dans les 48h',
+        'Les informations pratiques (adresse exacte, horaires, matériel requis) vous seront envoyées 1 semaine avant la formation',
         'Un groupe WhatsApp sera créé pour faciliter les échanges entre participants',
-        'Préparez votre ordinateur portable (Windows/Mac) avec au moins 8GB de RAM'
+        'Assurez-vous d\'avoir un ordinateur portable (Windows/Mac) avec au moins 8GB de RAM'
       ],
-      whatYouWillLearn: '🎯 Ce que vous allez apprendre',
-      skills: [
-        'Maîtrise complète de Midjourney pour la création d\'images professionnelles',
-        'Génération de vidéos avec RunwayML et Kling.ai',
-        'Création de voix off et doublage automatique',
-        'Effets spéciaux avec Luma AI',
-        'Montage et finalisation de votre court-métrage',
-        'Techniques avancées de prompting et workflow professionnel'
+      whatIncluded: '✅ Ce qui est inclus dans votre formation',
+      included: [
+        'Formation complète sur 6 outils d\'IA révolutionnaires',
+        'Accès à tous les logiciels et plateformes pendant la formation',
+        'Création de votre propre court-métrage professionnel',
+        'Certificat de formation Artist Lab CAMPUS',
+        'Accès au réseau exclusif des anciens participants',
+        'Support technique pendant et après la formation'
       ],
-      contact: 'Des questions ? Contactez-nous à info@artistlab.studio ou répondez directement à cet email.',
+      importantNote: '⚠️ Information importante',
+      noteText: 'Votre inscription est maintenant définitive. En cas d\'empêchement, vous pouvez reporter votre participation à une session ultérieure en nous contactant au moins 7 jours avant la date de formation.',
+      contact: 'Des questions ? Notre équipe est à votre disposition à info@artistlab.studio',
       signature: 'L\'équipe Artist Lab CAMPUS',
-      footer: '🎬 Préparez-vous à révolutionner votre approche du cinéma avec l\'IA !',
-      ps: 'P.S. : Suivez-nous sur nos réseaux sociaux pour des conseils et actualités sur l\'IA dans le cinéma.'
+      footer: '🎬 Préparez-vous à révolutionner votre approche du cinéma !',
+      thankYou: 'Merci de votre confiance et à très bientôt !'
     },
     en: {
-      subject: '✅ Registration Confirmation - Cinema & AI Training - Artist Lab CAMPUS',
+      subject: '🎉 Payment confirmed - Cinema & AI Training - Artist Lab CAMPUS',
       greeting: `Hello ${formData.prenom} ${formData.nom},`,
-      thanks: 'Congratulations! Your registration for our "Cinema & AI" training is confirmed. Your payment has been processed successfully.',
-      detailsTitle: '📋 Your training details',
+      paymentSuccess: 'Great news! Your payment has been processed successfully and your spot is now reserved for our "Cinema & AI" training.',
+      paymentDetailsTitle: '💳 Payment details',
+      paymentId: 'Transaction ID',
+      amount: 'Amount paid',
+      paymentDate: 'Payment date',
+      paymentMethod: 'Payment method',
+      trainingDetailsTitle: '📋 Your training details',
       location: 'Location',
       date: 'Date',
       duration: 'Duration',
       durationValue: '2 intensive days (14 hours of training)',
-      price: 'Price',
-      priceValue: '€1.00 (launch price)',
-      nextStepsTitle: '🚀 Next steps',
+      nextStepsTitle: '🚀 Important next steps',
       nextSteps: [
-        'You will receive an email with the detailed program and tools to install within 48h',
-        'Practical information (exact address, schedule, equipment to bring) will be sent 1 week before the training',
+        'You will receive an email with the detailed program and tools installation list within 48h',
+        'Practical information (exact address, schedule, required equipment) will be sent 1 week before the training',
         'A WhatsApp group will be created to facilitate exchanges between participants',
-        'Prepare your laptop (Windows/Mac) with at least 8GB of RAM'
+        'Make sure you have a laptop (Windows/Mac) with at least 8GB of RAM'
       ],
-      whatYouWillLearn: '🎯 What you will learn',
-      skills: [
-        'Complete mastery of Midjourney for professional image creation',
-        'Video generation with RunwayML and Kling.ai',
-        'Voice-over creation and automatic dubbing',
-        'Special effects with Luma AI',
-        'Editing and finalizing your short film',
-        'Advanced prompting techniques and professional workflow'
+      whatIncluded: '✅ What\'s included in your training',
+      included: [
+        'Complete training on 6 revolutionary AI tools',
+        'Access to all software and platforms during training',
+        'Creation of your own professional short film',
+        'Artist Lab CAMPUS training certificate',
+        'Access to the exclusive alumni network',
+        'Technical support during and after training'
       ],
-      contact: 'Questions? Contact us at info@artistlab.studio or reply directly to this email.',
+      importantNote: '⚠️ Important information',
+      noteText: 'Your registration is now final. In case of impediment, you can postpone your participation to a later session by contacting us at least 7 days before the training date.',
+      contact: 'Questions? Our team is available at info@artistlab.studio',
       signature: 'The Artist Lab CAMPUS team',
-      footer: '🎬 Get ready to revolutionize your approach to cinema with AI!',
-      ps: 'P.S.: Follow us on social media for tips and news about AI in cinema.'
+      footer: '🎬 Get ready to revolutionize your approach to cinema!',
+      thankYou: 'Thank you for your trust and see you soon!'
     }
   };
 
@@ -145,10 +155,14 @@ async function sendConfirmationEmail(formData: any) {
   const location = isEnglish ? locationInfo.location_en : locationInfo.location_fr;
   const date = isEnglish ? locationInfo.date_en : locationInfo.date_fr;
 
-  console.log('Preparing email content...');
-  console.log('Subject:', content.subject);
-  console.log('Location:', location);
-  console.log('Date:', date);
+  // Format payment date
+  const paymentDate = new Date().toLocaleDateString(isEnglish ? 'en-GB' : 'fr-FR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -161,21 +175,21 @@ async function sendConfirmationEmail(formData: any) {
     <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc;">
       <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #0EA5E9 0%, #38BDF8 100%); padding: 40px 30px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 40px 30px; text-align: center;">
+          <div style="color: white; font-size: 48px; margin-bottom: 15px;">🎉</div>
           <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            🎬 Artist Lab CAMPUS
+            ${isEnglish ? 'Payment Confirmed!' : 'Paiement Confirmé !'}
           </h1>
           <p style="color: #ffffff; margin: 15px 0 0 0; font-size: 18px; opacity: 0.95; font-weight: 500;">
-            Formation Cinéma & IA
+            Artist Lab CAMPUS - Formation Cinéma & IA
           </p>
         </div>
         
-        <!-- Success Banner -->
-        <div style="background-color: #10B981; padding: 20px; text-align: center;">
-          <div style="color: white; font-size: 48px; margin-bottom: 10px;">✅</div>
-          <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">
-            ${isEnglish ? 'Registration Confirmed!' : 'Inscription Confirmée !'}
-          </h2>
+        <!-- Success Message -->
+        <div style="padding: 30px; background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%); border-bottom: 3px solid #10B981;">
+          <p style="color: #065F46; font-size: 18px; line-height: 1.6; margin: 0; font-weight: 600; text-align: center;">
+            ${content.paymentSuccess}
+          </p>
         </div>
         
         <!-- Main Content -->
@@ -184,45 +198,62 @@ async function sendConfirmationEmail(formData: any) {
             ${content.greeting}
           </p>
           
-          <p style="color: #374151; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
-            ${content.thanks}
-          </p>
-          
-          <!-- Training Details -->
-          <div style="background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%); padding: 30px; border-radius: 16px; margin-bottom: 30px; border: 1px solid #D1D5DB;">
-            <h3 style="color: #0EA5E9; margin: 0 0 25px 0; font-size: 22px; font-weight: bold;">
-              ${content.detailsTitle}
+          <!-- Payment Details -->
+          <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding: 25px; border-radius: 16px; margin-bottom: 30px; border: 2px solid #F59E0B;">
+            <h3 style="color: #92400E; margin: 0 0 20px 0; font-size: 20px; font-weight: bold;">
+              ${content.paymentDetailsTitle}
             </h3>
-            <div style="display: grid; gap: 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 2px solid #E5E7EB;">
-                <span style="color: #6B7280; font-weight: 600; font-size: 16px;">${content.location}:</span>
-                <span style="color: #1F2937; font-weight: 700; font-size: 16px;">${location}</span>
+            <div style="display: grid; gap: 15px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #F59E0B;">
+                <span style="color: #92400E; font-weight: 600;">${content.paymentId}:</span>
+                <span style="color: #1F2937; font-weight: 700; font-family: monospace; font-size: 14px;">${paymentDetails.id}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 2px solid #E5E7EB;">
-                <span style="color: #6B7280; font-weight: 600; font-size: 16px;">${content.date}:</span>
-                <span style="color: #1F2937; font-weight: 700; font-size: 16px;">${date}</span>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #F59E0B;">
+                <span style="color: #92400E; font-weight: 600;">${content.amount}:</span>
+                <span style="color: #10B981; font-weight: 700; font-size: 18px;">${(paymentDetails.amount_received / 100).toFixed(2)} ${paymentDetails.currency.toUpperCase()}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 2px solid #E5E7EB;">
-                <span style="color: #6B7280; font-weight: 600; font-size: 16px;">${content.duration}:</span>
-                <span style="color: #1F2937; font-weight: 700; font-size: 16px;">${content.durationValue}</span>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #F59E0B;">
+                <span style="color: #92400E; font-weight: 600;">${content.paymentDate}:</span>
+                <span style="color: #1F2937; font-weight: 700;">${paymentDate}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0;">
-                <span style="color: #6B7280; font-weight: 600; font-size: 16px;">${content.price}:</span>
-                <span style="color: #10B981; font-weight: 700; font-size: 18px;">${content.priceValue}</span>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+                <span style="color: #92400E; font-weight: 600;">${content.paymentMethod}:</span>
+                <span style="color: #1F2937; font-weight: 700;">💳 ${paymentDetails.payment_method_types?.[0] || 'Card'}</span>
               </div>
             </div>
           </div>
           
-          <!-- What You Will Learn -->
-          <div style="background-color: #FEF3C7; padding: 25px; border-radius: 12px; margin-bottom: 30px; border-left: 5px solid #F59E0B;">
-            <h3 style="color: #92400E; margin: 0 0 20px 0; font-size: 20px; font-weight: bold;">
-              ${content.whatYouWillLearn}
+          <!-- Training Details -->
+          <div style="background: linear-gradient(135deg, #EBF8FF 0%, #DBEAFE 100%); padding: 25px; border-radius: 16px; margin-bottom: 30px; border: 2px solid #0EA5E9;">
+            <h3 style="color: #0C4A6E; margin: 0 0 20px 0; font-size: 20px; font-weight: bold;">
+              ${content.trainingDetailsTitle}
             </h3>
-            <ul style="color: #92400E; font-size: 15px; line-height: 1.6; padding-left: 0; list-style: none; margin: 0;">
-              ${content.skills.map(skill => `
+            <div style="display: grid; gap: 15px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #0EA5E9;">
+                <span style="color: #0C4A6E; font-weight: 600;">${content.location}:</span>
+                <span style="color: #1F2937; font-weight: 700;">${location}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #0EA5E9;">
+                <span style="color: #0C4A6E; font-weight: 600;">${content.date}:</span>
+                <span style="color: #1F2937; font-weight: 700;">${date}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+                <span style="color: #0C4A6E; font-weight: 600;">${content.duration}:</span>
+                <span style="color: #1F2937; font-weight: 700;">${content.durationValue}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- What's Included -->
+          <div style="background-color: #F0FDF4; padding: 25px; border-radius: 12px; margin-bottom: 30px; border-left: 5px solid #10B981;">
+            <h3 style="color: #14532D; margin: 0 0 20px 0; font-size: 20px; font-weight: bold;">
+              ${content.whatIncluded}
+            </h3>
+            <ul style="color: #14532D; font-size: 15px; line-height: 1.6; padding-left: 0; list-style: none; margin: 0;">
+              ${content.included.map(item => `
                 <li style="margin-bottom: 10px; display: flex; align-items: flex-start;">
-                  <span style="color: #F59E0B; margin-right: 10px; font-weight: bold;">🎯</span>
-                  <span>${skill}</span>
+                  <span style="color: #10B981; margin-right: 10px; font-weight: bold;">✅</span>
+                  <span>${item}</span>
                 </li>
               `).join('')}
             </ul>
@@ -245,6 +276,16 @@ async function sendConfirmationEmail(formData: any) {
             </ul>
           </div>
           
+          <!-- Important Note -->
+          <div style="background-color: #FEF2F2; padding: 20px; border-radius: 12px; border-left: 5px solid #EF4444; margin-bottom: 30px;">
+            <h4 style="color: #991B1B; margin: 0 0 10px 0; font-size: 16px; font-weight: bold;">
+              ${content.importantNote}
+            </h4>
+            <p style="color: #991B1B; margin: 0; font-size: 14px; line-height: 1.5;">
+              ${content.noteText}
+            </p>
+          </div>
+          
           <!-- Contact Info -->
           <div style="background-color: #EBF8FF; padding: 25px; border-radius: 12px; border-left: 5px solid #0EA5E9; margin-bottom: 30px;">
             <p style="color: #1E40AF; margin: 0; font-size: 16px; font-weight: 500;">
@@ -252,13 +293,13 @@ async function sendConfirmationEmail(formData: any) {
             </p>
           </div>
           
-          <!-- Footer Message -->
+          <!-- Thank You Message -->
           <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%); border-radius: 12px; margin-bottom: 20px;">
-            <p style="color: #0EA5E9; font-size: 18px; font-weight: 700; margin: 0 0 10px 0;">
+            <p style="color: #10B981; font-size: 18px; font-weight: 700; margin: 0 0 10px 0;">
               ${content.footer}
             </p>
-            <p style="color: #6B7280; font-size: 14px; margin: 0; font-style: italic;">
-              ${content.ps}
+            <p style="color: #374151; font-size: 16px; margin: 0; font-weight: 600;">
+              ${content.thankYou}
             </p>
           </div>
         </div>
@@ -273,7 +314,7 @@ async function sendConfirmationEmail(formData: any) {
           </p>
           <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #374151;">
             <p style="color: #6B7280; margin: 0; font-size: 12px;">
-              Cet email a été envoyé automatiquement suite à votre inscription confirmée.
+              Confirmation de paiement automatique - Transaction sécurisée par Stripe
             </p>
           </div>
         </div>
@@ -284,7 +325,7 @@ async function sendConfirmationEmail(formData: any) {
 
   // Use Resend API to send email
   try {
-    console.log('Sending email using Resend API...');
+    console.log('Sending payment confirmation email using Resend API...');
     
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -298,6 +339,11 @@ async function sendConfirmationEmail(formData: any) {
         subject: content.subject,
         html: htmlContent,
         reply_to: 'info@artistlab.studio',
+        tags: [
+          { name: 'category', value: 'payment_confirmation' },
+          { name: 'training_location', value: formData.date },
+          { name: 'payment_amount', value: (paymentDetails.amount_received / 100).toString() }
+        ]
       }),
     });
 
@@ -310,20 +356,21 @@ async function sendConfirmationEmail(formData: any) {
     }
 
     const result = await emailResponse.json();
-    console.log('✅ EMAIL SENT SUCCESSFULLY!');
+    console.log('✅ PAYMENT CONFIRMATION EMAIL SENT SUCCESSFULLY!');
     console.log('Email result:', result);
     
     return { success: true, emailId: result.id };
   } catch (error) {
-    console.error('❌ EMAIL SENDING FAILED:');
+    console.error('❌ PAYMENT CONFIRMATION EMAIL FAILED:');
     console.error('Error details:', error);
-    throw new Error(`Failed to send confirmation email: ${error.message}`);
+    throw new Error(`Failed to send payment confirmation email: ${error.message}`);
   }
 }
 
 Deno.serve(async (req) => {
-  console.log('=== WEBHOOK REQUEST RECEIVED ===');
+  console.log('=== STRIPE WEBHOOK REQUEST RECEIVED ===');
   console.log('Method:', req.method);
+  console.log('Timestamp:', new Date().toISOString());
   
   try {
     if (req.method === 'OPTIONS') {
@@ -352,6 +399,7 @@ Deno.serve(async (req) => {
       console.log('✅ Webhook event constructed successfully');
       console.log('Event type:', event.type);
       console.log('Event ID:', event.id);
+      console.log('Event created:', new Date(event.created * 1000).toISOString());
     } catch (error: any) {
       console.error('❌ Webhook signature verification failed:', error.message);
       return new Response(`Webhook signature verification failed: ${error.message}`, { status: 400 });
@@ -361,12 +409,20 @@ Deno.serve(async (req) => {
     await handleEvent(event);
 
     console.log('✅ Webhook processed successfully');
-    return new Response(JSON.stringify({ received: true, eventType: event.type }), {
+    return new Response(JSON.stringify({ 
+      received: true, 
+      eventType: event.type,
+      eventId: event.id,
+      timestamp: new Date().toISOString()
+    }), {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error: any) {
     console.error('❌ Error processing webhook:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
@@ -374,13 +430,15 @@ Deno.serve(async (req) => {
 });
 
 async function handleEvent(event: Stripe.Event) {
-  console.log('=== HANDLING EVENT ===');
+  console.log('=== HANDLING STRIPE EVENT ===');
   console.log('Event type:', event.type);
   console.log('Event ID:', event.id);
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
     console.log('Processing completed checkout session:', session.id);
+    console.log('Session mode:', session.mode);
+    console.log('Payment status:', session.payment_status);
 
     try {
       // Get the payment intent details
@@ -390,6 +448,7 @@ async function handleEvent(event: Stripe.Event) {
 
       const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string);
       console.log('Payment intent status:', paymentIntent.status);
+      console.log('Payment intent amount:', paymentIntent.amount_received, paymentIntent.currency);
       
       // Get the customer details from Stripe
       if (!session.customer) {
@@ -457,16 +516,19 @@ async function handleEvent(event: Stripe.Event) {
 
       console.log('✅ Registration updated successfully');
 
-      // Send confirmation email only if payment succeeded
+      // Send payment confirmation email if payment succeeded
       if (paymentIntent.status === 'succeeded') {
-        console.log('💌 Payment succeeded, sending confirmation email...');
+        console.log('💌 Payment succeeded, sending payment confirmation email...');
         try {
-          const emailResult = await sendConfirmationEmail(registration);
-          console.log('✅ Confirmation email sent successfully:', emailResult);
+          const emailResult = await sendPaymentConfirmationEmail(registration, paymentIntent);
+          console.log('✅ Payment confirmation email sent successfully:', emailResult);
         } catch (emailError) {
-          console.error('❌ Failed to send confirmation email:', emailError);
-          // Don't throw here - payment was successful, email failure shouldn't fail the webhook
+          console.error('❌ Failed to send payment confirmation email:', emailError);
+          // Log the error but don't fail the webhook - payment was successful
           console.error('🚨 CRITICAL: Payment processed but confirmation email failed to send!');
+          console.error('Registration ID:', registration.id);
+          console.error('Customer email:', customer.email);
+          console.error('Payment ID:', paymentIntent.id);
         }
       } else {
         console.log('Payment not succeeded (status:', paymentIntent.status, '), skipping confirmation email');
@@ -510,6 +572,11 @@ async function handleEvent(event: Stripe.Event) {
       console.error('❌ Error processing expired session:', error);
       throw error;
     }
+  } else if (event.type === 'payment_intent.succeeded') {
+    // Additional confirmation for payment success
+    const paymentIntent = event.data.object as Stripe.PaymentIntent;
+    console.log('Payment intent succeeded:', paymentIntent.id);
+    console.log('Amount received:', paymentIntent.amount_received, paymentIntent.currency);
   } else {
     console.log('ℹ️ Unhandled event type:', event.type);
   }
