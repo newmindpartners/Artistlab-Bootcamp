@@ -5,7 +5,7 @@ import { PerformanceMonitor } from './utils/performance';
 
 // Lazy load components for better performance
 const Header = React.lazy(() => import('./components/Header'));
-const Hero = React.lazy(() => import('./components/Hero'));
+const Hero = React.lazy(() => import('./components/OptimizedHero'));
 const Programme = React.lazy(() => import('./components/Programme'));
 const Formateur = React.lazy(() => import('./components/Formateur'));
 const Avantages = React.lazy(() => import('./components/Avantages'));
@@ -14,10 +14,20 @@ const Footer = React.lazy(() => import('./components/Footer'));
 const PaymentSuccess = React.lazy(() => import('./components/PaymentSuccess'));
 const PaymentCancel = React.lazy(() => import('./components/PaymentCancel'));
 
-// Loading component
+// Optimized loading component with better UX
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-navy flex items-center justify-center">
-    <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+    <div className="flex flex-col items-center">
+      <div className="w-12 h-12 border-3 border-accent border-t-transparent rounded-full animate-spin mb-4"></div>
+      <p className="text-white/70 text-sm">Loading...</p>
+    </div>
+  </div>
+);
+
+// Optimized section loading fallback
+const SectionLoader = ({ height = "py-20" }: { height?: string }) => (
+  <div className={`${height} bg-navy flex items-center justify-center`}>
+    <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
   </div>
 );
 
@@ -31,20 +41,20 @@ function MainLayout() {
         <Suspense fallback={<LoadingSpinner />}>
           <Hero />
         </Suspense>
-        <Suspense fallback={<div className="py-20 bg-navy"></div>}>
+        <Suspense fallback={<SectionLoader />}>
           <Formateur />
         </Suspense>
-        <Suspense fallback={<div className="py-20 bg-[#151d2b]"></div>}>
+        <Suspense fallback={<SectionLoader height="py-20 bg-[#151d2b]" />}>
           <Programme />
         </Suspense>
-        <Suspense fallback={<div className="py-20 bg-navy"></div>}>
+        <Suspense fallback={<SectionLoader />}>
           <Avantages />
         </Suspense>
-        <Suspense fallback={<div className="py-20 bg-gradient-to-b from-[#151d2b] to-navy"></div>}>
+        <Suspense fallback={<SectionLoader height="py-20 bg-gradient-to-b from-[#151d2b] to-navy" />}>
           <Inscription />
         </Suspense>
       </main>
-      <Suspense fallback={<div className="bg-navy py-16"></div>}>
+      <Suspense fallback={<SectionLoader height="py-16" />}>
         <Footer />
       </Suspense>
     </div>
@@ -56,6 +66,20 @@ function App() {
   React.useEffect(() => {
     const monitor = PerformanceMonitor.getInstance();
     monitor.reportWebVitals();
+    
+    // Preload critical resources
+    const preloadCriticalResources = () => {
+      // Preload hero background image
+      const heroImg = new Image();
+      heroImg.src = "https://images.pexels.com/photos/2773498/pexels-photo-2773498.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fm=webp";
+      
+      // Preload trainer image
+      const trainerImg = new Image();
+      trainerImg.src = "/Theo-Mahy-Ma-Somga.jpeg";
+    };
+    
+    // Preload after initial render
+    setTimeout(preloadCriticalResources, 100);
   }, []);
 
   return (
