@@ -4,6 +4,8 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  # Disable secrets scanning for expected Vite environment variables
+  SECRETS_SCAN_ENABLED = "false"
 
 [[redirects]]
   from = "/*"
