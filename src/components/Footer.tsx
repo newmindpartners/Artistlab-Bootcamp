@@ -1,5 +1,5 @@
 import React from 'react';
-import { Film, Mail, MapPin, Facebook, Instagram, Youtube } from 'lucide-react';
+import { Film, Mail, MapPin, Instagram } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const Footer: React.FC = () => {
@@ -53,14 +53,13 @@ const Footer: React.FC = () => {
               {t.description}
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-white/50 hover:text-accent transition duration-300">
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-white/50 hover:text-accent transition duration-300">
+              <a 
+                href="https://www.instagram.com/artistlabbootcamp/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-white/50 hover:text-accent transition duration-300"
+              >
                 <Instagram className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-white/50 hover:text-accent transition duration-300">
-                <Youtube className="h-5 w-5" />
               </a>
             </div>
           </div>
